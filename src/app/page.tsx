@@ -3,13 +3,39 @@
 import { useChat } from "@ai-sdk/react";
 import { useState, useRef, useEffect } from "react";
 
+const STORAGE_KEY = "idmr-chat-messages";
+
 export default function Home() {
-  const { messages, sendMessage, status } = useChat();
+  const { messages, sendMessage, setMessages, status } = useChat();
   const [input, setInput] = useState("");
+  const [hydrated, setHydrated] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isLoading = status === "streaming" || status === "submitted";
+
+  // Load messages from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed);
+        }
+      } catch (e) {
+        console.error("Failed to parse saved messages:", e);
+      }
+    }
+    setHydrated(true);
+  }, [setMessages]);
+
+  // Save messages to localStorage when they change
+  useEffect(() => {
+    if (hydrated && messages.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    }
+  }, [messages, hydrated]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -43,11 +69,26 @@ export default function Home() {
     }
   }
 
+  function handleNewChat() {
+    setMessages([]);
+    localStorage.removeItem(STORAGE_KEY);
+  }
+
   return (
     <main className="mx-auto flex h-dvh max-w-3xl flex-col px-4 pb-4 pt-6">
-      <h1 className="mb-6 text-center text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-400 via-purple-400 to-rose-400 bg-clip-text text-transparent">
-        IDMR AI
-      </h1>
+      <div className="mb-6 flex items-center justify-center gap-3">
+        <h1 className="text-center text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-400 via-purple-400 to-rose-400 bg-clip-text text-transparent">
+          IDMR AI
+        </h1>
+        {messages.length > 0 && (
+          <button
+            onClick={handleNewChat}
+            className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-gray-400 hover:bg-white/10 hover:text-gray-200 transition-colors"
+          >
+            New chat
+          </button>
+        )}
+      </div>
 
       <div className="flex-1 overflow-y-auto scrollbar-thin space-y-4 pb-4">
         {messages.length === 0 && (
