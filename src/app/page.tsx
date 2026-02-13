@@ -224,9 +224,9 @@ function FormattedText({ text }: { text: string }) {
 }
 
 function formatInline(text: string): React.ReactNode {
-  // Handle bold (**text**) and italic (*text*)
+  // Handle links [text](url), bold (**text**), and italic (*text*)
   const parts: React.ReactNode[] = [];
-  const regex = /\*\*(.+?)\*\*|\*(.+?)\*/g;
+  const regex = /\[([^\]]+)\]\(([^)]+)\)|\*\*(.+?)\*\*|\*(.+?)\*/g;
   let lastIndex = 0;
   let match;
 
@@ -234,16 +234,31 @@ function formatInline(text: string): React.ReactNode {
     if (match.index > lastIndex) {
       parts.push(text.slice(lastIndex, match.index));
     }
-    if (match[1]) {
+    if (match[1] && match[2]) {
+      // Link: [text](url)
+      parts.push(
+        <a
+          key={match.index}
+          href={match[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-purple-400 hover:text-purple-300 underline underline-offset-2"
+        >
+          {match[1]}
+        </a>
+      );
+    } else if (match[3]) {
+      // Bold: **text**
       parts.push(
         <strong key={match.index} className="font-semibold text-gray-100">
-          {match[1]}
+          {match[3]}
         </strong>
       );
-    } else if (match[2]) {
+    } else if (match[4]) {
+      // Italic: *text*
       parts.push(
         <em key={match.index} className="italic text-gray-300">
-          {match[2]}
+          {match[4]}
         </em>
       );
     }

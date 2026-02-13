@@ -114,10 +114,12 @@ ${conversationSummary}`,
 
   // Step 3: Format context and stream the answer
   const context = allChunks
-    .map(
-      (c, i) =>
-        `[Source ${i + 1}] "${c.title}"${c.speaker ? ` by ${c.speaker}` : ""}${c.date ? ` (${c.date})` : ""}\n${c.content}`
-    )
+    .map((c, i) => {
+      const sourceInfo = `[Source ${i + 1}] "${c.title}"${c.speaker ? ` by ${c.speaker}` : ""}${c.date ? ` (${c.date})` : ""}`;
+      // Only include URL for transcripts (textbook is not hosted on idmr.net)
+      const urlInfo = c.source === "transcript" && c.url ? `\nURL: ${c.url}` : "";
+      return `${sourceInfo}${urlInfo}\n${c.content}`;
+    })
     .join("\n\n---\n\n");
 
   const systemPrompt = `You are a knowledgeable assistant specializing in IDMR (Institute of Divine Metaphysical Research) teachings, founded by Dr. Henry Clifford Kinley.
@@ -131,6 +133,9 @@ You have access to:
 ## How to Answer
 - Answer based on the retrieved source material below. Synthesize information across multiple sources when relevant.
 - Reference specific sources (title, speaker, date) when possible.
+- When citing transcript sources, include the URL as a markdown link so users can read the full transcript. Format: Source: [Title](URL)
+- If multiple transcripts are relevant, include multiple links.
+- The textbook "Elohim the Archetype" is not available online, so don't include links for textbook citations.
 - If the retrieved sources don't contain enough information, say so and suggest what the user might search for instead.
 - Be clear and direct. Use the language and terminology from the source material accurately.
 - For broad theological questions, draw from multiple sources to give a comprehensive answer rather than relying on a single chunk.
