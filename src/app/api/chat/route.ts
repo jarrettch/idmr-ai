@@ -68,7 +68,7 @@ export async function POST(req: Request) {
 
   // Step 1: Use a lightweight model to decide which retrieval tool(s) to call
   const plannerResult = await generateText({
-    model: anthropic("claude-3-5-haiku-latest"),
+    model: anthropic("claude-haiku-4-5-20251001"),
     system: `You are a query planner for an IDMR (Institute of Divine Metaphysical Research) knowledge base containing lecture transcripts and the textbook "Elohim the Archetype (Original) Pattern of the Universe."
 
 Given the user's question and recent conversation context, decide which search tool(s) to call. You MUST call at least one tool.
