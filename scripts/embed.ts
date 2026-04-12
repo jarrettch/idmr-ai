@@ -6,7 +6,7 @@ config({ path: ".env.local" });
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SECRET_KEY!
 );
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY!;
@@ -20,6 +20,14 @@ interface Chunk {
   url?: string;
   chunk_index: number;
   page?: number;
+}
+
+interface DocumentRow {
+  source: string;
+  title: string;
+  speaker: string | null;
+  date: string | null;
+  url: string | null;
 }
 
 async function getEmbeddings(texts: string[]): Promise<number[][]> {
@@ -68,6 +76,40 @@ async function main() {
   const chunks: Chunk[] = lines.map((l) => JSON.parse(l));
   console.log(`Loaded ${chunks.length} chunks`);
 
+  // ----- Step 1: upsert documents and build a (source,title) → id map -----
+
+  const docMap = new Map<string, DocumentRow>();
+  for (const chunk of chunks) {
+    const key = `${chunk.source}::${chunk.title}`;
+    if (!docMap.has(key)) {
+      docMap.set(key, {
+        source: chunk.source,
+        title: chunk.title,
+        speaker: chunk.speaker ?? null,
+        date: chunk.date ?? null,
+        url: chunk.url ?? null,
+      });
+    }
+  }
+
+  console.log(`Upserting ${docMap.size} documents...`);
+  const { data: docRows, error: docError } = await supabase
+    .from("documents")
+    .upsert(Array.from(docMap.values()), { onConflict: "source,title" })
+    .select("id, source, title");
+
+  if (docError || !docRows) {
+    console.error("Error upserting documents:", docError);
+    process.exit(1);
+  }
+
+  const docIdByKey = new Map<string, number>();
+  for (const row of docRows) {
+    docIdByKey.set(`${row.source}::${row.title}`, row.id as number);
+  }
+
+  // ----- Step 2: embed and insert chunks in batches -----
+
   const BATCH_SIZE = 100;
   let embedded = 0;
 
@@ -81,20 +123,24 @@ async function main() {
 
     const embeddings = await getEmbeddings(texts);
 
-    const rows = batch.map((chunk, j) => ({
-      content: chunk.content,
-      source: chunk.source,
-      title: chunk.title,
-      speaker: chunk.speaker || null,
-      date: chunk.date || null,
-      url: chunk.url || null,
-      page: chunk.page || null,
-      chunk_index: chunk.chunk_index,
-      embedding: JSON.stringify(embeddings[j]),
-    }));
+    const rows = batch.map((chunk, j) => {
+      const documentId = docIdByKey.get(`${chunk.source}::${chunk.title}`);
+      if (!documentId) {
+        throw new Error(
+          `No document_id found for ${chunk.source}::${chunk.title}`
+        );
+      }
+      return {
+        document_id: documentId,
+        content: chunk.content,
+        page: chunk.page ?? null,
+        chunk_index: chunk.chunk_index,
+        embedding: JSON.stringify(embeddings[j]),
+      };
+    });
 
     const { error } = await supabase.from("chunks").upsert(rows, {
-      onConflict: "source,title,chunk_index,page",
+      onConflict: "document_id,chunk_index,page",
     });
 
     if (error) {

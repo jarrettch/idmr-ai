@@ -8,6 +8,7 @@ export interface ChunkResult {
   speaker?: string;
   date?: string;
   url?: string;
+  soundcloud_url?: string;
   similarity: number;
 }
 
@@ -35,22 +36,18 @@ export async function searchByContent(query: string): Promise<ChunkResult[]> {
  * Fetch chunks from a specific document by title (sequential order).
  */
 export async function searchByTitle(title: string): Promise<ChunkResult[]> {
-  const { data } = await supabase
-    .from("chunks")
-    .select("content, source, title, speaker, date, url, chunk_index")
-    .ilike("title", `%${title}%`)
-    .order("chunk_index", { ascending: true })
-    .limit(40);
+  const { data, error } = await supabase.rpc("chunks_by_title", {
+    filter_title: title,
+    max_chunks: 40,
+  });
 
-  if (!data || data.length === 0) return [];
+  if (error) {
+    console.error("chunks_by_title error:", error);
+    return [];
+  }
 
-  return data.map((row) => ({
-    content: row.content as string,
-    source: row.source as string,
-    title: row.title as string,
-    speaker: row.speaker as string | undefined,
-    date: row.date as string | undefined,
-    url: row.url as string | undefined,
+  return (data ?? []).map((row: Record<string, unknown>) => ({
+    ...mapRow(row),
     similarity: 1.0,
   }));
 }
@@ -84,9 +81,10 @@ function mapRow(row: Record<string, unknown>): ChunkResult {
     content: row.content as string,
     source: row.source as string,
     title: row.title as string,
-    speaker: row.speaker as string | undefined,
-    date: row.date as string | undefined,
-    url: row.url as string | undefined,
+    speaker: (row.speaker as string | null) ?? undefined,
+    date: (row.date as string | null) ?? undefined,
+    url: (row.url as string | null) ?? undefined,
+    soundcloud_url: (row.soundcloud_url as string | null) ?? undefined,
     similarity: row.similarity as number,
   };
 }
