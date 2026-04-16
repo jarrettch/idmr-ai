@@ -1,5 +1,7 @@
+export const maxDuration = 60;
+
 import { anthropic } from "@ai-sdk/anthropic";
-import { streamText, generateText, convertToModelMessages, tool } from "ai";
+import { type UIMessage, streamText, generateText, convertToModelMessages, tool } from "ai";
 import { z } from "zod";
 import {
   searchByContent,
@@ -40,11 +42,11 @@ const retrievalTools = {
 };
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const { messages }: { messages: UIMessage[] } = await req.json();
 
   const lastUserMessage = [...messages]
     .reverse()
-    .find((m: { role: string }) => m.role === "user");
+    .find((m) => m.role === "user");
 
   if (!lastUserMessage) {
     return new Response("No user message found", { status: 400 });
@@ -52,16 +54,16 @@ export async function POST(req: Request) {
 
   const queryText =
     lastUserMessage.parts
-      ?.filter((p: { type: string }) => p.type === "text")
-      .map((p: { text: string }) => p.text)
-      .join(" ") ?? "";
+      .filter((p) => p.type === "text")
+      .map((p) => (p as { type: "text"; text: string }).text)
+      .join(" ");
 
   // Build brief conversation context for the query planner
   const recentMessages = messages.slice(-6).map(
-    (m: { role: string; parts?: { type: string; text: string }[] }) =>
+    (m) =>
       `${m.role}: ${m.parts
-        ?.filter((p: { type: string }) => p.type === "text")
-        .map((p: { text: string }) => p.text)
+        .filter((p) => p.type === "text")
+        .map((p) => (p as { type: "text"; text: string }).text)
         .join(" ")}`
   );
   const conversationSummary = recentMessages.join("\n");
@@ -111,6 +113,15 @@ ${conversationSummary}`,
   if (allChunks.length === 0) {
     allChunks = await searchByContent(queryText);
   }
+
+  // Dedupe chunks that appear in multiple tool results
+  const seen = new Set<string>();
+  allChunks = allChunks.filter((c) => {
+    const key = `${c.title}::${c.source}::${c.content.slice(0, 100)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 
   // Step 3: Format context and stream the answer
   const context = allChunks

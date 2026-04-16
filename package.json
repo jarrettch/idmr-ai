@@ -14,9 +14,6 @@
     "@ai-sdk/react": "^3.0.61",
     "@supabase/supabase-js": "^2.93.2",
     "@tailwindcss/postcss": "^4.1.18",
-    "@types/node": "^25.1.0",
-    "@types/react": "^19.2.10",
-    "@types/react-dom": "^19.2.3",
     "ai": "^6.0.59",
     "dotenv": "^17.2.3",
     "next": "^16.1.6",
@@ -25,5 +22,10 @@
     "react-dom": "^19.2.4",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.1.0",
+    "@types/react": "^19.2.10",
+    "@types/react-dom": "^19.2.3"
   }
 }
