@@ -129,7 +129,12 @@ ${conversationSummary}`,
       const sourceInfo = `[Source ${i + 1}] "${c.title}"${c.speaker ? ` by ${c.speaker}` : ""}${c.date ? ` (${c.date})` : ""}`;
       // Only include URL for transcripts (textbook is not hosted on idmr.net)
       const urlInfo = c.source === "transcript" && c.url ? `\nURL: ${c.url}` : "";
-      return `${sourceInfo}${urlInfo}\n${c.content}`;
+      // ~10 transcripts have a SoundCloud recording of the lecture
+      const soundcloudInfo =
+        c.source === "transcript" && c.soundcloud_url
+          ? `\nSoundCloud: ${c.soundcloud_url}`
+          : "";
+      return `${sourceInfo}${urlInfo}${soundcloudInfo}\n${c.content}`;
     })
     .join("\n\n---\n\n");
 
@@ -145,6 +150,7 @@ You have access to:
 - Answer based on the retrieved source material below. Synthesize information across multiple sources when relevant.
 - Reference specific sources (title, speaker, date) when possible.
 - When citing transcript sources, include the URL as a markdown link so users can read the full transcript. Format: Source: [Title](URL)
+- If a cited source also has a SoundCloud link, add a second markdown link labeled "Listen on SoundCloud" immediately after the transcript link. Format: Source: [Title](URL) · [Listen on SoundCloud](SoundCloud URL). Only do this when a SoundCloud link is provided for that source — never invent one.
 - If multiple transcripts are relevant, include multiple links.
 - The textbook "Elohim the Archetype" is not available online, so don't include links for textbook citations.
 - If the retrieved sources don't contain enough information, say so and suggest what the user might search for instead.

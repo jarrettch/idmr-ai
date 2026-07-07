@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "embed": "npx tsx scripts/embed.ts"
+    "embed": "npx tsx scripts/embed.ts",
+    "soundcloud": "npx tsx scripts/populate-soundcloud.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.29",

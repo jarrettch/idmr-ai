@@ -1,0 +1,39 @@
+{
+  "_comment": "Map of transcript title -> SoundCloud URL. Top-level string entries are what `populate-soundcloud.ts` writes to documents.soundcloud_url (titles matched case-insensitively). `_`-prefixed keys are ignored by the script — they preserve URLs we haven't matched yet or intentionally excluded, so nothing is lost. Run `npm run soundcloud -- --list` for exact DB titles, `-- --dry-run` to preview.",
+
+  "Judgment and Resurrection Now": "https://soundcloud.com/idmr-official/dr-henry-c-kinley-judgement-and-resurrection-now-september-1966",
+  "Faith": "https://soundcloud.com/idmr-official/dr-kinley-faith-021465",
+  "1958 Ministers Meeting Before First Class in Los Angeles (December 6, 1958)": "https://soundcloud.com/idmr-official/ministers-meeting-before-1st-class-in-los-angeles-dec-6-1958",
+  "Everpresence of Yahweh (Lust not Love)": "https://soundcloud.com/idmr-official/special-ministers-meeting-everpresence-of-yahweh-02-20-1971",
+  "Holy Spirit in You, Guiding Your Conscience and Making Intercession for You": "https://soundcloud.com/idmr-official/holy-spirit-in-you-guiding-your-conscience-and-making-intercession-for-you-1967",
+  "144000 And An Innumerable Company of Angels": "https://soundcloud.com/idmr-official/144000-and-an-innumerable-company-of-angels-04-13-1975",
+  "Adamic Transgression Corrected to Edenic Transgression": "https://soundcloud.com/idmr-official/adamic-transgression",
+  "Cosmogony to Eschatology": "https://soundcloud.com/idmr-official/cosmogony-to-eschatology",
+  "Yahweh-Elohim is the First Adam": "https://soundcloud.com/idmr-official/adam-created-the-creation-12-24-65",
+  "Gospel of the Kingdom (Righteousness, Peace and Joy in the Holy Spirit) in You Now": "https://soundcloud.com/idmr-official/dr-kinley-this-gospel-6-15-75-combined",
+
+  "_excluded": {
+    "https://soundcloud.com/idmr-official/dr-robert-harris-md-11-16-17-lecture-with-founders-church-representatives": "No transcript. Jarrett has the video and wants to transcribe it into the library later as a pipeline exercise."
+  },
+
+  "_unresolved": {
+    "https://soundcloud.com/idmr-official/dr-kinley-often-threatened-05-10-66-pt12v2": "no obvious title match. Date 05-10-66.",
+    "https://soundcloud.com/idmr-official/dr-henry-c-kinley-acts-238": "Acts 2:38 — no title match.",
+    "https://soundcloud.com/idmr-official/dr-kinley-nixon-quakers-07-03-1969": "no title match. Date 07-03-1969 (same date as the Dr. Harris one below).",
+    "https://soundcloud.com/idmr-official/john-f-kennedy-assassination-1967": "no title match.",
+    "https://soundcloud.com/idmr-official/puts-the-bible-together-1964": "NOT 'Genesis to Revelations' (that transcript is dated 1973; this track is 1964). No confident transcript match — likely untranscribed.",
+    "https://soundcloud.com/idmr-official/ministers-meeting-1958": "possible duplicate recording of the Dec 6 1958 ministers meeting already matched above — confirm whether it's the same lecture or a different 1958 meeting.",
+    "https://soundcloud.com/idmr-official/dr-robert-harris-md-07-03-1969": "Dr. Robert Harris — no matching title.",
+    "https://soundcloud.com/idmr-official/exegetical-analysis": "no title match.",
+    "https://soundcloud.com/idmr-official/complaining-remastered": "no title match ('Complaining', remastered).",
+    "https://soundcloud.com/idmr-official/seducing-spirits-speaking-lies": "guess: one of the 'Satanic Spirits' titles (seducing spirits / 1 Tim 4). Unconfirmed.",
+    "https://soundcloud.com/idmr-official/yahweh-created-the-devil-to-deceive": "guess: 'Yahweh Turned Satan Loose in Our Flesh'? likely same lecture as god-made-the-devil below. Unconfirmed.",
+    "https://soundcloud.com/idmr-official/dr-robert-harris-md-chicago-07-14-78": "Dr. Robert Harris, Chicago 07-14-78 — no matching title.",
+    "https://soundcloud.com/idmr-official/explains-the-vision-1931-1964": "CONFIRMED no transcript — Jarrett searched passages against the DB; it is NOT 'Truth Through Dr. Kinley's Vision' or 'Write the Vision...'. Untranscribed.",
+    "https://soundcloud.com/idmr-official/dos-donts-pollution-new-testament-re-upload": "no title match (re-upload).",
+    "https://soundcloud.com/idmr-official/god-made-the-devil-re-upload": "no title match; likely same lecture as yahweh-created-the-devil above (re-upload).",
+    "https://soundcloud.com/idmr-official/cant-fake-having-the-holy-spirit-1969-reupload": "no title match (1969, reupload).",
+    "https://soundcloud.com/idmr-official/dr-henry-c-kinley-12-21-69-parts-1-and-2-reupload": "date only (12-21-69), no topic in slug.",
+    "https://soundcloud.com/idmr-official/longevity-means-nothing-11-1967": "no title match (11-1967)."
+  }
+}
