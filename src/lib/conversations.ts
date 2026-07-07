@@ -15,6 +15,9 @@ export interface ConversationMeta {
 const INDEX_KEY = "idmr-conversations";
 const messagesKey = (id: string) => `idmr-messages:${id}`;
 
+// Key used by the pre-multi-chat single-conversation store.
+const LEGACY_KEY = "idmr-chat-messages";
+
 const hasWindow = () => typeof window !== "undefined";
 
 function nowIso(): string {
@@ -100,6 +103,28 @@ export function saveConversation(id: string, messages: UIMessage[]): void {
   const title = current.title ?? deriveTitle(messages);
   list[idx] = { ...current, title, updatedAt: nowIso() };
   writeIndex(list);
+}
+
+/**
+ * One-time import of the pre-multi-chat single conversation. If the legacy
+ * `idmr-chat-messages` key holds messages, adopt them as a conversation and
+ * clear the legacy key so this runs at most once. Safe to call on every mount.
+ */
+export function migrateLegacyConversation(): void {
+  if (!hasWindow()) return;
+  const raw = localStorage.getItem(LEGACY_KEY);
+  if (raw === null) return;
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      const meta = createConversation();
+      saveConversation(meta.id, parsed as UIMessage[]);
+    }
+  } catch {
+    // Malformed legacy data — drop it rather than crash the app.
+  }
+  localStorage.removeItem(LEGACY_KEY);
 }
 
 /** Whether a conversation has no stored messages (a fresh "New chat"). */

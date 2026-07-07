@@ -11,6 +11,7 @@ import {
   loadMessages,
   saveConversation,
   isEmptyConversation,
+  migrateLegacyConversation,
 } from "@/lib/conversations";
 
 export default function Home() {
@@ -28,6 +29,7 @@ export default function Home() {
   // On mount: load the conversation list and open the most recent one, or
   // start a fresh conversation if there are none.
   useEffect(() => {
+    migrateLegacyConversation();
     const list = listConversations();
     if (list.length > 0) {
       setActiveId(list[0].id);
