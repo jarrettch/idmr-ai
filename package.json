@@ -8,7 +8,9 @@
     "start": "next start",
     "embed": "npx tsx scripts/embed.ts",
     "soundcloud": "npx tsx scripts/populate-soundcloud.ts",
-    "test:e2e": "playwright test"
+    "aliases": "npx tsx scripts/build-aliases.ts",
+    "test:e2e": "playwright test",
+    "test:resolve": "npx tsx scripts/check-resolve.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.29",

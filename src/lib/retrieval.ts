@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { getEmbedding } from "./embeddings";
+import { resolveDocumentTitle } from "./resolve-document";
 
 export interface ChunkResult {
   content: string;
@@ -33,11 +34,21 @@ export async function searchByContent(query: string): Promise<ChunkResult[]> {
 }
 
 /**
- * Fetch chunks from a specific document by title (sequential order).
+ * Fetch chunks from a specific document (sequential order). Resolves loose
+ * references — content headings ("Sunday Morning 74/75"), "also called" names
+ * ("the Christmas tape"), dates, disputants — to the canonical document via a
+ * fuzzy title/alias match. Falls back to the fuzzy ILIKE RPC on the raw
+ * reference when nothing resolves confidently.
  */
-export async function searchByTitle(title: string): Promise<ChunkResult[]> {
+export async function searchByTitle(ref: string): Promise<ChunkResult[]> {
+  const canonical = resolveDocumentTitle(ref);
+  if (canonical) {
+    const exact = await chunksByExactTitle(canonical, 40);
+    if (exact.length > 0) return exact;
+  }
+
   const { data, error } = await supabase.rpc("chunks_by_title", {
-    filter_title: title,
+    filter_title: ref,
     max_chunks: 40,
   });
 
@@ -53,6 +64,52 @@ export async function searchByTitle(title: string): Promise<ChunkResult[]> {
 }
 
 /**
+ * Fetch a single document's chunks by exact title, in sequential order.
+ * Precise (unlike the ILIKE RPC, this won't over-match titles that are
+ * substrings of others, e.g. "Satanic Spirits").
+ */
+async function chunksByExactTitle(
+  title: string,
+  max: number
+): Promise<ChunkResult[]> {
+  const { data: doc, error: docError } = await supabase
+    .from("documents")
+    .select("id, source, title, speaker, date, url, soundcloud_url")
+    .eq("title", title)
+    .limit(1)
+    .maybeSingle();
+
+  if (docError || !doc) {
+    if (docError) console.error("documents lookup error:", docError);
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("chunks")
+    .select("content, page, chunk_index")
+    .eq("document_id", doc.id)
+    .order("page", { nullsFirst: true })
+    .order("chunk_index", { ascending: true })
+    .limit(max);
+
+  if (error) {
+    console.error("chunks by document_id error:", error);
+    return [];
+  }
+
+  return (data ?? []).map((c: Record<string, unknown>) => ({
+    content: c.content as string,
+    source: doc.source as string,
+    title: doc.title as string,
+    speaker: (doc.speaker as string | null) ?? undefined,
+    date: (doc.date as string | null) ?? undefined,
+    url: (doc.url as string | null) ?? undefined,
+    soundcloud_url: (doc.soundcloud_url as string | null) ?? undefined,
+    similarity: 1.0,
+  }));
+}
+
+/**
  * Vector search filtered to a specific document title.
  */
 export async function searchWithinDocument(
@@ -60,10 +117,13 @@ export async function searchWithinDocument(
   title: string
 ): Promise<ChunkResult[]> {
   const embedding = await getEmbedding(query);
+  // Resolve loose references to the canonical title so the ILIKE filter lands
+  // on the right document (falls back to the raw reference if unresolved).
+  const filterTitle = resolveDocumentTitle(title) ?? title;
 
   const { data, error } = await supabase.rpc("match_chunks_filtered", {
     query_embedding: embedding,
-    filter_title: title,
+    filter_title: filterTitle,
     match_count: 10,
     match_threshold: 0.1,
   });
