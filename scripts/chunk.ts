@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync, readdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { stripBoilerplate } from "./strip-boilerplate";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -106,7 +107,10 @@ function loadTranscripts(dir: string): Chunk[] {
 
   for (const file of files) {
     const data: TranscriptSource = JSON.parse(readFileSync(join(dir, file), "utf-8"));
-    const textChunks = chunkText(data.content);
+    // Remove transcription boilerplate (convention notes, scaffolding) before
+    // chunking so it can't pollute retrieval. See scripts/strip-boilerplate.ts.
+    const { cleaned } = stripBoilerplate(data.content);
+    const textChunks = chunkText(cleaned);
     for (let i = 0; i < textChunks.length; i++) {
       chunks.push({
         source: "transcript",

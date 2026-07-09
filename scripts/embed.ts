@@ -139,12 +139,26 @@ async function main() {
       };
     });
 
-    const { error } = await supabase.from("chunks").upsert(rows, {
-      onConflict: "document_id,chunk_index,page",
-    });
+    // Retry transient failures (e.g. free-tier statement timeouts / cold
+    // compute) with backoff before giving up on the run.
+    let lastError: unknown = null;
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      const { error } = await supabase.from("chunks").upsert(rows, {
+        onConflict: "document_id,chunk_index,page",
+      });
+      if (!error) {
+        lastError = null;
+        break;
+      }
+      lastError = error;
+      console.warn(
+        `  Batch ${batchNum} insert attempt ${attempt} failed (${(error as { code?: string }).code ?? "?"}); retrying...`
+      );
+      await new Promise((r) => setTimeout(r, 1000 * attempt));
+    }
 
-    if (error) {
-      console.error(`Error inserting batch ${batchNum}:`, error);
+    if (lastError) {
+      console.error(`Error inserting batch ${batchNum}:`, lastError);
       process.exit(1);
     }
 
