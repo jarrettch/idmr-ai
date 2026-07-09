@@ -145,6 +145,8 @@ export default function Home() {
           {conversations.map((c) => (
             <div
               key={c.id}
+              data-testid="conversation-item"
+              data-active={c.id === activeId}
               onClick={() => selectConversation(c.id)}
               className={`group flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-sm cursor-pointer transition-colors ${
                 c.id === activeId
@@ -152,7 +154,9 @@ export default function Home() {
                   : "text-gray-400 hover:bg-white/5 hover:text-gray-200"
               }`}
             >
-              <span className="truncate">{c.title ?? "New chat"}</span>
+              <span data-testid="conversation-title" className="truncate">
+                {c.title ?? "New chat"}
+              </span>
               <button
                 onClick={(e) => handleDelete(c.id, e)}
                 aria-label="Delete conversation"
@@ -232,6 +236,8 @@ export default function Home() {
             {messages.map((m) => (
               <div
                 key={m.id}
+                data-testid="message"
+                data-role={m.role}
                 className={`rounded-2xl px-4 py-3 ${
                   m.role === "user"
                     ? "ml-auto max-w-[80%] bg-gradient-to-br from-blue-600 to-purple-600"

@@ -6,3 +6,7 @@ data/
 scripts/test-*.ts
 .vercel
 tsconfig.tsbuildinfo
+test-results/
+playwright-report/
+blob-report/
+.playwright/
