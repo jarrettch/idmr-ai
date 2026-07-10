@@ -171,6 +171,54 @@ async function main() {
     }
   }
 
+  // ----- Step 3: delete stale chunks -----
+  // The upsert above overwrites (document_id, chunk_index, page) rows in
+  // place, but a document whose chunk count SHRANK (e.g. after stripper
+  // improvements) leaves its old tail rows behind, and retrieval would serve
+  // that stale text. Chunk indexes restart per page for the textbook, so
+  // group by (document, page). Documents absent from this chunks file are
+  // left untouched.
+
+  const groups = new Map<
+    string,
+    { docId: number; page: number | null; maxIdx: number }
+  >();
+  for (const chunk of chunks) {
+    const docId = docIdByKey.get(`${chunk.source}::${chunk.title}`)!;
+    const page = chunk.page ?? null;
+    const key = `${docId}::${page}`;
+    const g = groups.get(key);
+    if (g) g.maxIdx = Math.max(g.maxIdx, chunk.chunk_index);
+    else groups.set(key, { docId, page, maxIdx: chunk.chunk_index });
+  }
+
+  console.log(`Deleting stale chunks across ${groups.size} (doc, page) groups...`);
+  let staleDeleted = 0;
+  for (const g of groups.values()) {
+    let lastError: unknown = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      let q = supabase
+        .from("chunks")
+        .delete({ count: "exact" })
+        .eq("document_id", g.docId)
+        .gt("chunk_index", g.maxIdx);
+      q = g.page === null ? q.is("page", null) : q.eq("page", g.page);
+      const { count, error } = await q;
+      if (!error) {
+        staleDeleted += count ?? 0;
+        lastError = null;
+        break;
+      }
+      lastError = error;
+      await new Promise((r) => setTimeout(r, 1000 * attempt));
+    }
+    if (lastError) {
+      console.error("Error deleting stale chunks:", lastError);
+      process.exit(1);
+    }
+  }
+  console.log(`  Deleted ${staleDeleted} stale chunks`);
+
   console.log("Done! All chunks embedded and stored in Supabase.");
 }
 
