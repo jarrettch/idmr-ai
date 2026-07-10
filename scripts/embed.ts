@@ -31,25 +31,45 @@ interface DocumentRow {
 }
 
 async function getEmbeddings(texts: string[]): Promise<number[][]> {
-  const res = await fetch("https://api.openai.com/v1/embeddings", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "text-embedding-3-small",
-      input: texts,
-    }),
-  });
+  // Retry transient failures (5xx, 429, network hiccups) with backoff — a
+  // single flaky response otherwise kills a ~100-batch run mid-way.
+  let lastError: Error | null = null;
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    let res: Response;
+    try {
+      res = await fetch("https://api.openai.com/v1/embeddings", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "text-embedding-3-small",
+          input: texts,
+        }),
+      });
+    } catch (err) {
+      lastError = err as Error;
+      console.warn(`  Embedding attempt ${attempt} failed (network); retrying...`);
+      await new Promise((r) => setTimeout(r, 2000 * attempt));
+      continue;
+    }
 
-  if (!res.ok) {
+    if (res.ok) {
+      const json = await res.json();
+      return json.data.map((d: { embedding: number[] }) => d.embedding);
+    }
+
     const err = await res.text();
-    throw new Error(`OpenAI API error: ${res.status} ${err}`);
+    lastError = new Error(`OpenAI API error: ${res.status} ${err}`);
+    if (res.status >= 500 || res.status === 429) {
+      console.warn(`  Embedding attempt ${attempt} failed (${res.status}); retrying...`);
+      await new Promise((r) => setTimeout(r, 2000 * attempt));
+      continue;
+    }
+    throw lastError; // 4xx other than 429: not transient, fail fast
   }
-
-  const json = await res.json();
-  return json.data.map((d: { embedding: number[] }) => d.embedding);
+  throw lastError;
 }
 
 async function main() {
