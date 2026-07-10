@@ -11,7 +11,8 @@ export const DOCUMENT_ALIASES: DocumentAlias[] = [
   {
     "title": "144000 And An Innumerable Company of Angels",
     "aliases": [
-      "APRIL 13, 1975: 144000 AND AN INNUMERABLE COMPANY OF ANGELS"
+      "APRIL 13, 1975: 144000 AND AN INNUMERABLE COMPANY OF ANGELS",
+      "75.0413"
     ]
   },
   {
@@ -27,25 +28,29 @@ export const DOCUMENT_ALIASES: DocumentAlias[] = [
   {
     "title": "1st National Convention: Business Meeting (July 15, 1967)",
     "aliases": [
-      "JULY 15, 1967: 67 CONVENTION: FIRST NATIONAL CONVENTION BUSINESS MEETING Saturday, July 15, 1967: 10 AM – Salvation Army Hall, 117 West High Street, Springfield, Ohio"
+      "JULY 15, 1967: 67 CONVENTION: FIRST NATIONAL CONVENTION BUSINESS MEETING Saturday, July 15, 1967: 10 AM – Salvation Army Hall, 117 West High Street, Springfield, Ohio",
+      "67.0715A"
     ]
   },
   {
     "title": "1st National Convention: Exodus and Aaron's Rod (July 19, 1967)",
     "aliases": [
-      "JULY 19,1967 CONVENTION: EXODUS AND AARON’S ROD"
+      "JULY 19,1967 CONVENTION: EXODUS AND AARON’S ROD",
+      "67.0719PM"
     ]
   },
   {
     "title": "2300 Days and the Millennium",
     "aliases": [
-      "1966: THE 2300 DAYS AND THE MILLENNIUM"
+      "1966: THE 2300 DAYS AND THE MILLENNIUM",
+      "66 DM"
     ]
   },
   {
     "title": "Adam and Eve in the Garden, 666",
     "aliases": [
-      "1973: ADAM AND EVE IN THE GARDEN. 666"
+      "1973: ADAM AND EVE IN THE GARDEN. 666",
+      "73 AEG"
     ]
   },
   {
@@ -57,49 +62,57 @@ export const DOCUMENT_ALIASES: DocumentAlias[] = [
   {
     "title": "Admonishment and Encouragement to Come to School",
     "aliases": [
-      "* SEPTEMBER 26,1965: * ADMONISHMENT AND ENCOURAGEMENT TO COME TO SCHOOL"
+      "* SEPTEMBER 26,1965: * ADMONISHMENT AND ENCOURAGEMENT TO COME TO SCHOOL",
+      "65.0926"
     ]
   },
   {
     "title": "Adultery Continued",
     "aliases": [
-      "NOVEMBER 8,1974: ADULTERY CONTINUED"
+      "NOVEMBER 8,1974: ADULTERY CONTINUED",
+      "74.1108"
     ]
   },
   {
     "title": "Altar of Incense is Yahshua",
     "aliases": [
-      "NOV 17, 1974: ALTAR OF INCENSE IS YAHSHUA"
+      "NOV 17, 1974: ALTAR OF INCENSE IS YAHSHUA",
+      "74.1117"
     ]
   },
   {
     "title": "Babylon is Fallen",
     "aliases": [
-      "MAY 16, 1974: BABYLON IS FALLEN"
+      "MAY 16, 1974: BABYLON IS FALLEN",
+      "74.0516"
     ]
   },
   {
     "title": "Book of Jasher",
     "aliases": [
-      "* JULY, 1967: THE BOOK OF JASHER * ( also known as: BEEN EVERYWHERE)"
+      "* JULY, 1967: THE BOOK OF JASHER * ( also known as: BEEN EVERYWHERE)",
+      "67.07 BJ"
     ]
   },
   {
     "title": "Book that Yahweh Wrote: The Book of Life",
     "aliases": [
-      "1970: THE BOOK THAT YAHWEH WROTE: THE BOOK OF LIFE"
+      "1970: THE BOOK THAT YAHWEH WROTE: THE BOOK OF LIFE",
+      "70 BY"
     ]
   },
   {
     "title": "Carnal Mind Defined",
     "aliases": [
-      "DECEMBER 25, 1973: CARNAL MIND DEFINED ( also called: THE CHRISTMAS TAPE)"
+      "DECEMBER 25, 1973: CARNAL MIND DEFINED ( also called: THE CHRISTMAS TAPE)",
+      "73.1225"
     ]
   },
   {
     "title": "Charts & the Second Coming",
     "aliases": [
-      "1966: CHARTS AND THE SECOND COMING"
+      "1966: CHARTS AND THE SECOND COMING",
+      "66CC"
     ]
   },
   {
@@ -111,62 +124,72 @@ export const DOCUMENT_ALIASES: DocumentAlias[] = [
   {
     "title": "Come Out of Babylon",
     "aliases": [
-      "1966/1967: COME OUT OF BABYLON ( also known as: COME ON UP, JOHN)"
+      "1966/1967: COME OUT OF BABYLON ( also known as: COME ON UP, JOHN)",
+      "67CB T"
     ]
   },
   {
     "title": "Correct Entrance into the Most Holy Place",
     "aliases": [
-      "SEPTEMBER 24, 1972: CORRECT ENTRANCE INTO THE MOST HOLY PLACE"
+      "SEPTEMBER 24, 1972: CORRECT ENTRANCE INTO THE MOST HOLY PLACE",
+      "72.0924"
     ]
   },
   {
     "title": "Cosmogony to Eschatology",
     "aliases": [
-      "1965:SPECIAL 3HR MEETING: COSMOGONY TO ESCHATOLOGY ( also called: BEGINNING TO ENDING; ( also called: GODHEAD THROUGH AGES AND DISPENSATIONS)"
+      "1965:SPECIAL 3HR MEETING: COSMOGONY TO ESCHATOLOGY ( also called: BEGINNING TO ENDING; ( also called: GODHEAD THROUGH AGES AND DISPENSATIONS)",
+      "65 CE"
     ]
   },
   {
     "title": "Creation by Yahshua",
     "aliases": [
-      "LATE 1971, EARLY 1972: CREATION BY YAHSHUA ( also called: EXPLAINS THE CREATION; CREATION BY ELOHIM)"
+      "LATE 1971, EARLY 1972: CREATION BY YAHSHUA ( also called: EXPLAINS THE CREATION; CREATION BY ELOHIM)",
+      "71 CY"
     ]
   },
   {
     "title": "Creation: A Virgin Shall Conceive and Bring Forth A Son",
     "aliases": [
-      "OCTOBER 3, 1965: A VIRGIN SHALL CONCEIVE AND BRING FORTH A SON AND SHALL CALL HIS NAME IMMANUEL ( also called: CREATION)"
+      "OCTOBER 3, 1965: A VIRGIN SHALL CONCEIVE AND BRING FORTH A SON AND SHALL CALL HIS NAME IMMANUEL ( also called: CREATION)",
+      "65.1003"
     ]
   },
   {
     "title": "Day of Atonement",
     "aliases": [
-      "SEPTEMBER 29, 1974: THE DAY OF ATONEMENT"
+      "SEPTEMBER 29, 1974: THE DAY OF ATONEMENT",
+      "74.0929"
     ]
   },
   {
     "title": "Day of Eternity",
     "aliases": [
-      "JANUARY 22, 1975: THE DAY OF ETERNITY"
+      "JANUARY 22, 1975: THE DAY OF ETERNITY",
+      "75.0122"
     ]
   },
   {
     "title": "Day of the Lord",
     "aliases": [
-      "SPRING, 1964: THE DAY OF THE LORD"
+      "SPRING, 1964: THE DAY OF THE LORD",
+      "64 DL"
     ]
   },
   {
     "title": "Day of Yahweh: Spirit, Soul, Body",
     "aliases": [
-      "EARLY 60’S THE DAY OF THE YAHWEH: (also called: SPIRIT, SOUL, BODY"
+      "EARLY 60’S THE DAY OF THE YAHWEH: (also called: SPIRIT, SOUL, BODY",
+      "65? SSB"
     ]
   },
   {
     "title": "Debate with the Church of Christ",
     "aliases": [
       "DECEMBER 9, 10, 1963: DEBATE WITH THE CHURCH OF CHRIST",
-      "RN HOGAN AND DR. HENRY C. KINLEY"
+      "RN HOGAN AND DR. HENRY C. KINLEY",
+      "63.1209"
     ]
   },
   {
@@ -178,7 +201,8 @@ export const DOCUMENT_ALIASES: DocumentAlias[] = [
   {
     "title": "Discussion at Mount Carmel",
     "aliases": [
-      "1973: DISCUSSION AT MOUNT CARMEL"
+      "1973: DISCUSSION AT MOUNT CARMEL",
+      "73 MC"
     ]
   },
   {
@@ -190,7 +214,8 @@ export const DOCUMENT_ALIASES: DocumentAlias[] = [
   {
     "title": "Earth Will Not Abide Forever",
     "aliases": [
-      "APRIL 15,1973: THE EARTH WILL NOT ABIDE FOREVER"
+      "APRIL 15,1973: THE EARTH WILL NOT ABIDE FOREVER",
+      "73.0415"
     ]
   },
   {
@@ -205,7 +230,8 @@ export const DOCUMENT_ALIASES: DocumentAlias[] = [
   {
     "title": "Erroneous Doctrine Preached from the Floor",
     "aliases": [
-      "* DECEMBER 3,1975: * ERRONEOUS DOCTRINE PREACHED FROM THE FLOOR also called: CHASTISEMENT ABOUT THE PHYSICAL IS OUT AND THE NAME IS YAH) ( also called: DETAILED EXPLANATION OF I CORINTHIANS 15)"
+      "* DECEMBER 3,1975: * ERRONEOUS DOCTRINE PREACHED FROM THE FLOOR also called: CHASTISEMENT ABOUT THE PHYSICAL IS OUT AND THE NAME IS YAH) ( also called: DETAILED EXPLANATION OF I CORINTHIANS 15)",
+      "75.1203"
     ]
   },
   {
@@ -217,73 +243,85 @@ export const DOCUMENT_ALIASES: DocumentAlias[] = [
   {
     "title": "Explanation of Hebrews 1:1",
     "aliases": [
-      "1967: EXPLANATION OF HEBREWS 1:1"
+      "1967: EXPLANATION OF HEBREWS 1:1",
+      "67 H"
     ]
   },
   {
     "title": "Faith",
     "aliases": [
-      "FEBRUARY 14, 1965: FAITH"
+      "FEBRUARY 14, 1965: FAITH",
+      "65.0214"
     ]
   },
   {
     "title": "False Prophets and the True Gospel",
     "aliases": [
-      "MAY 9, 1966: FALSE PROPHETS AND THE TRUE GOSPEL"
+      "MAY 9, 1966: FALSE PROPHETS AND THE TRUE GOSPEL",
+      "66.0509"
     ]
   },
   {
     "title": "Fornication and Adultery",
     "aliases": [
-      "OCTOBER 30,1974: FORNICATION AND ADULTERY"
+      "OCTOBER 30,1974: FORNICATION AND ADULTERY",
+      "74.1030"
     ]
   },
   {
     "title": "Fulfillment of Matthew 5",
     "aliases": [
-      "JULY 4,1971: FULFILLMENT OF MATTHEW 5"
+      "JULY 4,1971: FULFILLMENT OF MATTHEW 5",
+      "71.0704"
     ]
   },
   {
     "title": "Generator, Degenerator and Regenerator",
     "aliases": [
-      "1967: THE GENERATOR, DEGENERATOR, REGENERATOR"
+      "1967: THE GENERATOR, DEGENERATOR, REGENERATOR",
+      "67 GDR"
     ]
   },
   {
     "title": "Genesis to Revelations",
     "aliases": [
-      "MARCH 28, 1973: GENESIS TO REVELATION"
+      "MARCH 28, 1973: GENESIS TO REVELATION",
+      "73.0328"
     ]
   },
   {
     "title": "Gospel of the Kingdom (Righteousness, Peace and Joy in the Holy Spirit) in You Now",
     "aliases": [
-      "JUNE 15, 1975: THIS GOSPEL OF THE KINGDOM (RIGHTEOUSNESS, PEACE, AND JOY IN THE HOLY SPIRIT) IN YOU NOW Sunday morning, 11 – 1 am: June 15, 1975 Los Angeles, California"
+      "JUNE 15, 1975: THIS GOSPEL OF THE KINGDOM (RIGHTEOUSNESS, PEACE, AND JOY IN THE HOLY SPIRIT) IN YOU NOW Sunday morning, 11 – 1 am: June 15, 1975 Los Angeles, California",
+      "75.0615"
     ]
   },
   {
     "title": "Healings and Predictions",
     "aliases": [
-      "1967 CONVENTION: JULY 18,1967; 7:30-10 PM HEALINGS AND PREDICTIONS"
+      "1967 CONVENTION: JULY 18,1967; 7:30-10 PM HEALINGS AND PREDICTIONS",
+      "67.0718 P"
     ]
   },
   {
     "title": "Hell: What and Where",
     "aliases": [
-      "1966: HELL: WHAT AND WHERE Dr. Henry C. Kinley Los Angeles, California 1966 original recording"
+      "1966: HELL: WHAT AND WHERE Dr. Henry C. Kinley Los Angeles, California 1966 original recording",
+      "66 HWW"
     ]
   },
   {
     "title": "Here I Am",
     "aliases": [
-      "JULY 23, 1971: 1971 CONVENTION: HERE I AM Dr. Henry C. Kinley Beverly Hills Hilton Beverly Hills, California July 23, 1971 at the 1971 Convention The first time Dr. Kinley spoke at the 1971 convention"
+      "JULY 23, 1971: 1971 CONVENTION: HERE I AM Dr. Henry C. Kinley Beverly Hills Hilton Beverly Hills, California July 23, 1971 at the 1971 Convention The first time Dr. Kinley spoke at the 1971 convention",
+      "71.0723"
     ]
   },
   {
     "title": "Holy Spirit in You, Guiding Your Conscience and Making Intercession for You",
     "aliases": [
-      "* 1967: THE HOLY SPIRIT IN YOU, * GUIDING YOUR CONSCIENCE AND MAKING INTERCESSION FOR YOU"
+      "* 1967: THE HOLY SPIRIT IN YOU, * GUIDING YOUR CONSCIENCE AND MAKING INTERCESSION FOR YOU",
+      "67 HSGC"
     ]
   },
   {
@@ -295,43 +333,50 @@ export const DOCUMENT_ALIASES: DocumentAlias[] = [
   {
     "title": "I Heard a Voice from Heaven",
     "aliases": [
-      "* 1966: I HEARD A VOICE FROM HEAVEN"
+      "* 1966: I HEARD A VOICE FROM HEAVEN",
+      "66 VH"
     ]
   },
   {
     "title": "I Heard a Voice from Heaven and the Sign Will Follow",
     "aliases": [
-      "JULY 15, 1967, 2-4:30 PM: 1967 FIRST NATIONAL CONVENTION: FIRST SPIRITUAL SESSION: I HEARD A VOICE FROM HEAVEN AND THE SIGN WILL FOLLOW"
+      "JULY 15, 1967, 2-4:30 PM: 1967 FIRST NATIONAL CONVENTION: FIRST SPIRITUAL SESSION: I HEARD A VOICE FROM HEAVEN AND THE SIGN WILL FOLLOW",
+      "67.0715"
     ]
   },
   {
     "title": "Ignorance and Blasphemy",
     "aliases": [
-      "MAY 6,1965: IGNORANCE AND BLASPHEMY"
+      "MAY 6,1965: IGNORANCE AND BLASPHEMY",
+      "65.0506"
     ]
   },
   {
     "title": "Intercession: Rightly Dividing the Word of Truth",
     "aliases": [
-      "1966 – 1968 : INTERCESSION; RIGHTLY DIVIDING THE WORD OF TRUTH"
+      "1966 – 1968 : INTERCESSION; RIGHTLY DIVIDING THE WORD OF TRUTH",
+      "66-68 I"
     ]
   },
   {
     "title": "Jehovah and Other Erroneous Doctrine",
     "aliases": [
-      "NOVEMBER 20, 1974: JEHOVAH AND OTHER ERRONEOUS DOCTRINE"
+      "NOVEMBER 20, 1974: JEHOVAH AND OTHER ERRONEOUS DOCTRINE",
+      "74.1120"
     ]
   },
   {
     "title": "Judgment and Resurrection Now",
     "aliases": [
-      "SEPTEMBER, 1966: JUDGEMENT AND RESURRECTION NOW"
+      "SEPTEMBER, 1966: JUDGEMENT AND RESURRECTION NOW",
+      "66.09"
     ]
   },
   {
     "title": "Knowledge Where We Stand in the Purpose",
     "aliases": [
-      "1974: KNOWLEDGE WHERE WE STAND IN THE PURPOSE; ETERNITY"
+      "1974: KNOWLEDGE WHERE WE STAND IN THE PURPOSE; ETERNITY",
+      "74 KP"
     ]
   },
   {
@@ -343,19 +388,22 @@ export const DOCUMENT_ALIASES: DocumentAlias[] = [
   {
     "title": "Law of the Spirit Versus Science of Mind",
     "aliases": [
-      "* 1959: LAW OF THE SPIRIT VERSUS SCIENCE OF MIND"
+      "* 1959: LAW OF THE SPIRIT VERSUS SCIENCE OF MIND",
+      "59 LS"
     ]
   },
   {
     "title": "Living in the Last Days",
     "aliases": [
-      "JANUARY, 1974: LIVING IN THE LAST DAYS"
+      "JANUARY, 1974: LIVING IN THE LAST DAYS",
+      "74.01 LLD"
     ]
   },
   {
     "title": "Living the Life: Love of Yahweh",
     "aliases": [
-      "MAY, 1968: LIVING THE LIFE: LOVE OF YAHWEH"
+      "MAY, 1968: LIVING THE LIFE: LOVE OF YAHWEH",
+      "68.05 L"
     ]
   },
   {
@@ -367,67 +415,78 @@ export const DOCUMENT_ALIASES: DocumentAlias[] = [
   {
     "title": "Matthew 24:1-15, Gosptel",
     "aliases": [
-      "NOVEMBER 16, 1975: MATTHEW 24:1-15, GOSPEL"
+      "NOVEMBER 16, 1975: MATTHEW 24:1-15, GOSPEL",
+      "75.1116"
     ]
   },
   {
     "title": "Must Have a Profound Knowledge",
     "aliases": [
-      "JUNE 22, 1974: MUST HAVE A PROFOUND KNOWLEDGE"
+      "JUNE 22, 1974: MUST HAVE A PROFOUND KNOWLEDGE",
+      "74.0622"
     ]
   },
   {
     "title": "Mystery of Iniquity Cries Peace and Miscalculates His Coming",
     "aliases": [
-      "1966: MYSTERY OF INIQUITY CRIES PEACE AND MISCALCULATES HIS COMING"
+      "1966: MYSTERY OF INIQUITY CRIES PEACE AND MISCALCULATES HIS COMING",
+      "66 MI"
     ]
   },
   {
     "title": "Mystery of Iniquity: Man is Ignorant of Purpose (Mark of the Beast; Jealousy)",
     "aliases": [
-      "MAY 5 or 12,1968: MYSTERY OF INIQUITY: MAN IS IGNORANT OF PURPOSE (also called: MARK OF THE BEAST; JEALOUSY)"
+      "MAY 5 or 12,1968: MYSTERY OF INIQUITY: MAN IS IGNORANT OF PURPOSE (also called: MARK OF THE BEAST; JEALOUSY)",
+      "68.0512"
     ]
   },
   {
     "title": "Mystery of Iniquity: Satanic Spirit with a Carnal Mind in the Flesh",
     "aliases": [
-      "APRIL 16, 1975: THE MYSTERY OF INIQUITY: SATANIC SPIRIT WITH A CARNAL MIND IN THE FLESH Dr. Henry C. Kinley April 16, 1975 Los Angeles, California"
+      "APRIL 16, 1975: THE MYSTERY OF INIQUITY: SATANIC SPIRIT WITH A CARNAL MIND IN THE FLESH Dr. Henry C. Kinley April 16, 1975 Los Angeles, California",
+      "75.0416"
     ]
   },
   {
     "title": "Name Revealed to Moses, Not Before",
     "aliases": [
-      "FEBRUARY 14, 1975: NAME REVEALED TO MOSES, NOT BEFORE"
+      "FEBRUARY 14, 1975: NAME REVEALED TO MOSES, NOT BEFORE",
+      "75.0214"
     ]
   },
   {
     "title": "Natural Man Can't Believe",
     "aliases": [
-      "1968: THE NATURAL MAN CAN’T BELIEVE"
+      "1968: THE NATURAL MAN CAN’T BELIEVE",
+      "68 ME"
     ]
   },
   {
     "title": "None of the Angels in Heaven & None on Earth Knew Purpose of Yahweh",
     "aliases": [
-      "December 4, 1974: NONE OF THE ANGELS IN HEAVEN AND NONE ON EARTH KNEW THE PURPOSE OF YAHWEH"
+      "December 4, 1974: NONE OF THE ANGELS IN HEAVEN AND NONE ON EARTH KNEW THE PURPOSE OF YAHWEH",
+      "74.1204"
     ]
   },
   {
     "title": "Old and New Covenant",
     "aliases": [
-      "MARCH, 1968: OLD AND NEW COVENANT by Henry Clifford Kinley Los Angeles, California"
+      "MARCH, 1968: OLD AND NEW COVENANT by Henry Clifford Kinley Los Angeles, California",
+      "68.03 C"
     ]
   },
   {
     "title": "One Spirit in a Body",
     "aliases": [
-      "* OCTOBER 6, 1974: ONE SPIRIT IN A BODY * Dr. Henry C. Kinley 1040 South Grand Ave., Los Angeles, California 1 90 minute audio cassette"
+      "* OCTOBER 6, 1974: ONE SPIRIT IN A BODY * Dr. Henry C. Kinley 1040 South Grand Ave., Los Angeles, California 1 90 minute audio cassette",
+      "74.1006"
     ]
   },
   {
     "title": "Paul and the Eunuchs",
     "aliases": [
-      "1967 CONVENTION: JULY 17,1967; 7:30-10 PM PAUL AND THE EUNUCHS"
+      "1967 CONVENTION: JULY 17,1967; 7:30-10 PM PAUL AND THE EUNUCHS",
+      "67.O7l7 P"
     ]
   },
   {
@@ -445,169 +504,190 @@ export const DOCUMENT_ALIASES: DocumentAlias[] = [
   {
     "title": "Psalms 139: Sunrise, Sunset",
     "aliases": [
-      "JANUARY 15, 1975: PSALM 139. SUNRISE, SUNSET"
+      "JANUARY 15, 1975: PSALM 139. SUNRISE, SUNSET",
+      "75.0115"
     ]
   },
   {
     "title": "Questions and Answers (February 1969)",
     "aliases": [
-      "FEBRUARY, 1969: QUESTIONS AND ANSWERS"
+      "FEBRUARY, 1969: QUESTIONS AND ANSWERS",
+      "69.02 QA"
     ]
   },
   {
     "title": "Revelation of Yahshua from Heaven",
     "aliases": [
-      "SEPTEMBER, 1967: REVELATION OF YAHSHUA FROM HEAVEN"
+      "SEPTEMBER, 1967: REVELATION OF YAHSHUA FROM HEAVEN",
+      "67.09 RY"
     ]
   },
   {
     "title": "Rock and the Temple",
     "aliases": [
-      "APRIL 23, 1975: THE ROCK AND THE TEMPLE by Henry Clifford Kinley Los Angeles, California"
+      "APRIL 23, 1975: THE ROCK AND THE TEMPLE by Henry Clifford Kinley Los Angeles, California",
+      "75.0423"
     ]
   },
   {
     "title": "Satan Refuses Spiritual Resurrection",
     "aliases": [
-      "JUNE 1967: SATAN REFUSES SPIRITUAL RESURRECTION"
+      "JUNE 1967: SATAN REFUSES SPIRITUAL RESURRECTION",
+      "67.06 AM"
     ]
   },
   {
     "title": "Satanic Spirits",
     "aliases": [
-      "* JUNE, 1971: SATANIC SPIRITS * (ALSO CALLED: WOMAN CLOTHED IN THE SUN)"
+      "* JUNE, 1971: SATANIC SPIRITS * (ALSO CALLED: WOMAN CLOTHED IN THE SUN)",
+      "71.06 SS"
     ]
   },
   {
     "title": "Satanic Spirits in Ministers",
     "aliases": [
-      "1973: SATANIC SPIRITS IN MINISTERS"
+      "1973: SATANIC SPIRITS IN MINISTERS",
+      "36B"
     ]
   },
   {
     "title": "Satanic Spirits to Demons",
     "aliases": [
-      "NOVEMBER, 1970: SATANIC SPIRITS TO DEMONS by Henry Clifford Kinley November, 1970 Los Angeles, California"
+      "NOVEMBER, 1970: SATANIC SPIRITS TO DEMONS by Henry Clifford Kinley November, 1970 Los Angeles, California",
+      "70.11? SSD"
     ]
   },
   {
     "title": "Spirit in You: Christendoom Reuniting",
     "aliases": [
-      "1959: SPIRIT IN YOU; CHRISTENDOOM REUNITING ( also called: THE SALVATION OF ISRAEL)"
+      "1959: SPIRIT IN YOU; CHRISTENDOOM REUNITING ( also called: THE SALVATION OF ISRAEL)",
+      "59 SC"
     ]
   },
   {
     "title": "Spiritual Covenant by Faith",
     "aliases": [
-      "* 19 66: SPIRITUAL COVENANT BY FAITH * ACCORDING TO THE PROMISE GIVEN TO ABRAHAM, NOT BY THE WORKS OF THE CARNAL LAW by Henry Clifford Kinley Los Angeles, California"
+      "* 19 66: SPIRITUAL COVENANT BY FAITH * ACCORDING TO THE PROMISE GIVEN TO ABRAHAM, NOT BY THE WORKS OF THE CARNAL LAW by Henry Clifford Kinley Los Angeles, California",
+      "66 CF"
     ]
   },
   {
     "title": "Spiritual Significance of the Retardation of a Child: Carnal Mind",
     "aliases": [
-      "DECEMBER 20, 1968: SPIRITUAL SIGNIFICANCE OF THE RETARDATION OF A CHILD: CARNAL MIND by Henry Clifford Kinley December 20, 1968 Los Angeles, California"
+      "DECEMBER 20, 1968: SPIRITUAL SIGNIFICANCE OF THE RETARDATION OF A CHILD: CARNAL MIND by Henry Clifford Kinley December 20, 1968 Los Angeles, California",
+      "68.1220"
     ]
   },
   {
     "title": "Temple and Covenants",
     "aliases": [
-      "1974: TEMPLE AND COVENANTS"
-    ]
-  },
-  {
-    "title": "Transcripts",
-    "aliases": [
-      "The Authenticity of these Official Transcripts was verified and confirmed by a rigorous triple-proofing process and"
+      "1974: TEMPLE AND COVENANTS",
+      "74 TC"
     ]
   },
   {
     "title": "Truth Through Dr. Kinley's Vision",
     "aliases": [
-      "A SUNDAY MORNING IN 1974/1975: TRUTH THROUGH DR. KINLEY’S VISION"
+      "A SUNDAY MORNING IN 1974/1975: TRUTH THROUGH DR. KINLEY’S VISION",
+      "74 TV"
     ]
   },
   {
     "title": "Two Exoduses Before the Genesis",
     "aliases": [
-      "AFTERNOON SESSION OF A CONVENTION: TWO EXODUSES BEFORE THE GENESIS"
+      "AFTERNOON SESSION OF A CONVENTION: TWO EXODUSES BEFORE THE GENESIS",
+      "69 EX"
     ]
   },
   {
     "title": "Understanding the Pattern in its Real Terms",
     "aliases": [
-      "6/67: UNDERSTANDING THE PATTERN IN IT’S REAL TERMS CAST OUT OR LIBERATES US FROM SATAN ( part of this tape is also called Marriage & Divorce ) (tape 1 side 2 and tape 2 side 1) (Also called Prayer)"
+      "6/67: UNDERSTANDING THE PATTERN IN IT’S REAL TERMS CAST OUT OR LIBERATES US FROM SATAN ( part of this tape is also called Marriage & Divorce ) (tape 1 side 2 and tape 2 side 1) (Also called Prayer)",
+      "67.06 PS"
     ]
   },
   {
     "title": "Unity of the Spirit",
     "aliases": [
-      "1967: UNITY OF THE SPIRIT by Henry Clifford Kinley 1967 Los Angeles, California"
+      "1967: UNITY OF THE SPIRIT by Henry Clifford Kinley 1967 Los Angeles, California",
+      "67US"
     ]
   },
   {
     "title": "Warning: Probationary Period, Then Flaming Vengeance",
     "aliases": [
-      "SEPTEMBER, 1967: WARNING: PROBATIONARY PERIOD, THEN FLAMING VENGEANCE ON THEM THAT KNOW NOT GOD"
+      "SEPTEMBER, 1967: WARNING: PROBATIONARY PERIOD, THEN FLAMING VENGEANCE ON THEM THAT KNOW NOT GOD",
+      "67.09 PV"
     ]
   },
   {
     "title": "Woman at the Well",
     "aliases": [
-      "SUNDAY NIGHT IN JUNE, 1971: THE WOMAN AT THE WELL by Henry Clifford Kinley Los Angeles, California audio cassette recording"
+      "SUNDAY NIGHT IN JUNE, 1971: THE WOMAN AT THE WELL by Henry Clifford Kinley Los Angeles, California audio cassette recording",
+      "71.06 WW"
     ]
   },
   {
     "title": "Write the Vision, Make it Plain on Tables, It Shall Speak (First Ohio State Convention)",
     "aliases": [
-      "AUGUST 4, 1974: FIRST OHIO STATE CONVENTION WRITE THE VISION, MAKE IT PLAIN ON TABLES, IT SHALL SPEAK"
+      "AUGUST 4, 1974: FIRST OHIO STATE CONVENTION WRITE THE VISION, MAKE IT PLAIN ON TABLES, IT SHALL SPEAK",
+      "74.0804"
     ]
   },
   {
     "title": "Yahshua has Always been Here",
     "aliases": [
-      "SEPTEMBER 3, 1972: YAHSHUA HAS ALWAYS BEEN HERE"
+      "SEPTEMBER 3, 1972: YAHSHUA HAS ALWAYS BEEN HERE",
+      "72.0903"
     ]
   },
   {
     "title": "Yahshua Sends His Disciples Forth",
     "aliases": [
-      "OCTOBER 14, 1972: YAHSHUA SENDS HIS DISCIPLES FORTH"
+      "OCTOBER 14, 1972: YAHSHUA SENDS HIS DISCIPLES FORTH",
+      "72.1014"
     ]
   },
   {
     "title": "Yahweh Turned Satan Loose in Our Flesh",
     "aliases": [
-      "SEPTEMBER 20, 1974: YAHWEH TURNED SATAN LOOSE IN OUR FLESH"
+      "SEPTEMBER 20, 1974: YAHWEH TURNED SATAN LOOSE IN OUR FLESH",
+      "74.0920"
     ]
   },
   {
     "title": "Yahweh-Elohim is the First Adam",
     "aliases": [
-      "DECEMBER 24, 1969: YAHWEH ELOHIM IS THE FIRST ADAM (ALSO CALLED: 1969 XMAS)"
+      "DECEMBER 24, 1969: YAHWEH ELOHIM IS THE FIRST ADAM (ALSO CALLED: 1969 XMAS)",
+      "69.1224"
     ]
   },
   {
     "title": "Yahweh's New Year with the Passover",
     "aliases": [
-      "JANUARY 1, 1975: YAHWEH’S NEW YEAR WITH THE PASSOVER"
+      "JANUARY 1, 1975: YAHWEH’S NEW YEAR WITH THE PASSOVER",
+      "75.0101"
     ]
   },
   {
     "title": "You are an Epistle",
     "aliases": [
-      "* 1964: YOU ARE AN EPISTLE"
+      "* 1964: YOU ARE AN EPISTLE",
+      "64 TE"
     ]
   },
   {
     "title": "You Can Easily be Deceived",
     "aliases": [
-      "NOVEMBER 3, 1974: YOU CAN EASILY BE DECEIVED"
+      "NOVEMBER 3, 1974: YOU CAN EASILY BE DECEIVED",
+      "74.1103"
     ]
   },
   {
     "title": "You Have to Die to Go to Heaven",
     "aliases": [
-      "1966: YOU HAVE TO DIE TO GO TO HEAVEN ( also called: BISHOP PIKE. SATAN IS A LIAR)"
+      "1966: YOU HAVE TO DIE TO GO TO HEAVEN ( also called: BISHOP PIKE. SATAN IS A LIAR)",
+      "66 H"
     ]
   }
 ];

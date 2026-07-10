@@ -11,10 +11,24 @@ import { DOCUMENT_ALIASES } from "./document-aliases";
 // containment toward documents that happen to contain "the"/"of"/etc).
 const QUERY_FILLER = new Set([
   "summarize", "summary", "transcript", "transcripts", "lecture", "lectures",
-  "talk", "overview", "please", "tell", "give", "about",
+  "talk", "overview", "please", "tell", "give", "about", "catalog",
   "the", "a", "an", "of", "in", "on", "and", "to", "for", "with", "that",
   "this", "it", "is", "was", "his", "he",
 ]);
+
+// Guards against confidently-wrong matches. Containment is asymmetric by
+// design (a short reference can match a long alias), which means a reference
+// that filler-strips down to one generic word ("the tape" → "tape",
+// "the 1971 lecture" → "1971") scores 1.0 against ANY alias containing it.
+// MIN_QUERY_CHARS refuses those outright. AMBIGUITY_MARGIN handles references
+// that score high on several documents (two share "Sunday Morning" aliases):
+// unless the winner clearly beats the runner-up — or is a decisively TIGHTER
+// match (the query covers far more of its alias, e.g. "carnal mind" against
+// the title "Carnal Mind Defined" vs. buried inside a long Mystery-of-Iniquity
+// title) — we return null so the vector/ILIKE fallback engages instead.
+const MIN_QUERY_CHARS = 5;
+const AMBIGUITY_MARGIN = 0.15;
+const TIGHTNESS_MARGIN = 0.15;
 
 function normalize(s: string): string {
   return s
@@ -77,11 +91,28 @@ export function resolveDocumentTitle(
   threshold = 0.6
 ): string | null {
   const qNorm = normalizeQuery(ref);
+  if (qNorm.length === 0) return null;
+
+  // Exact-alias fast path: a reference that IS one of a document's
+  // titles/aliases verbatim (normalized) resolves regardless of length —
+  // short catalog codes ("66CC", "36B", "66 H") would otherwise be
+  // unreachable under MIN_QUERY_CHARS, and exact full-field equality can't
+  // substring-collide the way containment can. An alias shared by several
+  // documents is ambiguous and falls through to the guarded scoring below.
+  const exactMatches = INDEX.filter((doc) =>
+    doc.fields.some((f) => f.norm === qNorm)
+  );
+  if (exactMatches.length === 1) return exactMatches[0].title;
+
+  if (qNorm.length < MIN_QUERY_CHARS) return null;
   const qGrams = trigrams(qNorm);
   if (qGrams.size === 0) return null;
 
-  let bestTitle: string | null = null;
-  let bestScore = 0;
+  // Score every document: `score` is query-containment (how much of the query
+  // appears in the doc's best field), `tight` is the reverse containment of
+  // that same field (how much of the field the query covers) — used only to
+  // break near-ties in favor of the tightest alias.
+  const scored: { title: string; score: number; tight: number }[] = [];
 
   for (const doc of INDEX) {
     // Cross-field: how much of the query appears anywhere in this doc's
@@ -89,6 +120,7 @@ export function resolveDocumentTitle(
     // title and "RN Hogan" in a separate alias). Slightly discounted so a
     // clean single-field match still wins ties.
     let score = containment(qGrams, doc.union) * 0.9;
+    let tight = 0;
 
     for (const field of doc.fields) {
       let s = containment(qGrams, field.grams);
@@ -100,13 +132,30 @@ export function resolveDocumentTitle(
       ) {
         s = Math.max(s, 0.95);
       }
-      if (s > score) score = s;
+      if (s > score) {
+        score = s;
+        tight = containment(field.grams, qGrams);
+      }
     }
-    if (score > bestScore) {
-      bestScore = score;
-      bestTitle = doc.title;
-    }
+    scored.push({ title: doc.title, score, tight });
   }
 
-  return bestScore >= threshold ? bestTitle : null;
+  scored.sort((a, b) => b.score - a.score);
+  const best = scored[0];
+  if (!best || best.score < threshold) return null;
+
+  // Clear winner: nothing else comes close.
+  if (best.score - (scored[1]?.score ?? 0) >= AMBIGUITY_MARGIN) {
+    return best.title;
+  }
+
+  // Near-tie: several documents contain (most of) the query. Resolve only if
+  // one candidate is a decisively tighter match than the rest; otherwise the
+  // reference is genuinely ambiguous and the fallback search handles it.
+  const contenders = scored.filter((d) => d.score > best.score - AMBIGUITY_MARGIN);
+  contenders.sort((a, b) => b.tight - a.tight);
+  if (contenders[0].tight - (contenders[1]?.tight ?? 0) >= TIGHTNESS_MARGIN) {
+    return contenders[0].title;
+  }
+  return null;
 }

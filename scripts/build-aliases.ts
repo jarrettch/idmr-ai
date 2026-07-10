@@ -37,6 +37,21 @@ function extractDisputants(content: string): string | null {
   return m ? m[1].replace(/[*\s]+$/g, "").trim() : null;
 }
 
+// Catalog value ("74 TV", "73.1225", "66-68 I") so catalog-number references
+// resolve. Digit-led value with a case-SENSITIVE 1–4-letter suffix (an /i
+// suffix would swallow the next lowercase word), guarded against a following
+// header field like "DATE:". A trailing "?" marks an uncertain number
+// ("CATALOG #: 65? SSB") — without it the suffix is lost and a bare, wrongly
+// confident "65" alias gets generated. Same value shape as strip-boilerplate.ts.
+function extractCatalog(content: string): string | null {
+  const m = norm(content)
+    .slice(0, 800)
+    .match(
+      /\b(?:CATALOG|[Cc]atalog)\s*(?:#|(?:NUMBER|[Nn]umber)|(?:NO|[Nn]o)\.?)?\s*[:#]?\s*([0-9][\w.-]*\??(?:\s+[A-Z]{1,4}\b(?!\s*:))?)/
+    );
+  return m ? m[1].trim() : null;
+}
+
 interface AliasEntry {
   title: string;
   aliases: string[];
@@ -46,6 +61,9 @@ const entries: AliasEntry[] = [];
 
 for (const file of readdirSync(RAW_DIR).filter((f) => f.endsWith(".json"))) {
   const obj = JSON.parse(readFileSync(join(RAW_DIR, file), "utf-8"));
+  // The junk "Transcripts" doc is a scraped index page, not a lecture — keep
+  // it out of the index so boilerplate-flavored references can't resolve to it.
+  if (obj.title === "Transcripts") continue;
   const content: string = obj.content ?? "";
   const aliases = new Set<string>();
 
@@ -55,6 +73,8 @@ for (const file of readdirSync(RAW_DIR).filter((f) => f.endsWith(".json"))) {
   }
   const disputants = extractDisputants(content);
   if (disputants) aliases.add(disputants);
+  const catalog = extractCatalog(content);
+  if (catalog) aliases.add(catalog);
 
   entries.push({ title: obj.title, aliases: [...aliases] });
 }

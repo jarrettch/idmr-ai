@@ -21,10 +21,30 @@ const CASES: [string, string | null][] = [
   ["debate with church of christ", "Debate with the Church"],
   ["the debate with RN Hogan", "Debate with the Church"],
   ["the archetype", "Elohim the Archetype"],
+  // Catalog-number references.
+  ["74 TV", "Truth Through"],
+  ["catalog 74 TV", "Truth Through"],
+  // Short catalog codes resolve via the exact-alias fast path (they'd be
+  // unreachable under the min-length guard otherwise).
+  ["66CC", "Charts"],
+  ["36B", "Satanic Spirits in Ministers"],
+  ["catalog 66 H", "You Have to Die"],
+  ["65 SSB", "Day of Yahweh"],
+  // The uncertain "CATALOG #: 65? SSB" must NOT yield a bare "65" alias that
+  // a stray number could exact-match.
+  ["65", null],
   // Off-topic queries must NOT force a match.
   ["what is the meaning of life", null],
   ["tell me about quantum physics", null],
   ["who is jesus", null],
+  // Short/generic references carry too little signal — must NOT resolve
+  // (previously "the tape" scored 1.0 against any alias containing "tape").
+  ["the tape", null],
+  ["the 1971 lecture", null],
+  ["catalog 66", null],
+  // Ambiguous references (two docs have "Sunday Morning" aliases) must fall
+  // back rather than silently picking one.
+  ["the sunday morning tape", null],
 ];
 
 let failed = 0;
