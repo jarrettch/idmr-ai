@@ -23,10 +23,19 @@ for (const file of files) {
   // Flag anomalies for human review:
   //  - stripped a lot (possible over-strip)
   //  - stripped nothing (possible missed boilerplate)
-  //  - body now starts oddly
+  //  - convention text survived (e.g. a preamble longer than the anchor bound)
   const pct = before.length ? Math.round((100 * removedChars) / before.length) : 0;
   if (removedChars > 2500) flagged.push(`${file} — removed ${removedChars} chars (${pct}%)`);
   if (removed.length === 0) flagged.push(`${file} — removed NOTHING`);
+  const survivor = cleaned.match(
+    /indicates an inaudible|indicates that dr\.?\s*kinley ended|words in capital letters are comments|pause words[, ]+such as|(?:transcriber|proofreader)['‘’s ]*notes|(?:audience|student body) comments are/i
+  );
+  if (survivor) {
+    const at = survivor.index ?? 0;
+    flagged.push(
+      `${file} — convention text SURVIVES strip @${at}: "${cleaned.slice(at, at + 80)}"`
+    );
+  }
 
   report += `\n${"=".repeat(78)}\n${file}\n`;
   report += `title: ${obj.title}\n`;
