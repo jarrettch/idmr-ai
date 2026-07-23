@@ -1,8 +1,9 @@
 import { supabase } from "@/lib/supabase";
 
 // Runs on a daily Vercel Cron (see vercel.json) to keep the free-tier Supabase
-// project from pausing after 7 days of inactivity. Any request resets that
-// timer, so a trivial read is enough.
+// project active. Supabase recommends a few user database requests per day,
+// while Vercel Hobby permits only one cron invocation per day, so one
+// invocation performs several lightweight reads.
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
@@ -14,10 +15,26 @@ export async function GET(req: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const { error } = await supabase.from("documents").select("id").limit(1);
+  const probes = await Promise.all([
+    supabase.from("documents").select("id").limit(1),
+    supabase.from("chunks").select("id").limit(1),
+    supabase
+      .from("documents")
+      .select("id")
+      .order("id", { ascending: false })
+      .limit(1),
+  ]);
+  const error = probes.find((probe) => probe.error)?.error;
   if (error) {
-    return Response.json({ ok: false, error: error.message }, { status: 500 });
+    return Response.json(
+      { ok: false, probes: probes.length, error: error.message },
+      { status: 500 }
+    );
   }
 
-  return Response.json({ ok: true, ts: new Date().toISOString() });
+  return Response.json({
+    ok: true,
+    probes: probes.length,
+    ts: new Date().toISOString(),
+  });
 }
