@@ -14,6 +14,10 @@ const QUERY_FILLER = new Set([
   "talk", "overview", "please", "tell", "give", "about", "catalog",
   "the", "a", "an", "of", "in", "on", "and", "to", "for", "with", "that",
   "this", "it", "is", "was", "his", "he",
+  // The speaker's name appears in nearly every title/alias (credit lines,
+  // "Dr. Henry C. Kinley"), so it carries no signal about WHICH document is
+  // meant — "Dr. Kinley" alone must not resolve to some arbitrary transcript.
+  "dr", "doctor", "kinley", "henry", "clifford",
 ]);
 
 // Guards against confidently-wrong matches. Containment is asymmetric by
@@ -97,22 +101,36 @@ export function resolveDocumentTitle(
   // titles/aliases verbatim (normalized) resolves regardless of length —
   // short catalog codes ("66CC", "36B", "66 H") would otherwise be
   // unreachable under MIN_QUERY_CHARS, and exact full-field equality can't
-  // substring-collide the way containment can. An alias shared by several
-  // documents is ambiguous and falls through to the guarded scoring below.
-  const exactMatches = INDEX.filter((doc) =>
-    doc.fields.some((f) => f.norm === qNorm)
-  );
-  if (exactMatches.length === 1) return exactMatches[0].title;
+  // substring-collide the way containment can. Checked against the UNSTRIPPED
+  // normalization first: filler-stripping removes stopwords that are part of
+  // real titles ("Satanic Spirits [in] Ministers", "… [to] Demons"), and the
+  // stripped form would miss the exact title and let a shorter sibling title
+  // win the substring boost instead. An alias shared by several documents is
+  // ambiguous and falls through to the guarded scoring below.
+  const rawNorm = normalize(ref);
+  for (const candidate of rawNorm === qNorm ? [qNorm] : [rawNorm, qNorm]) {
+    const exactMatches = INDEX.filter((doc) =>
+      doc.fields.some((f) => f.norm === candidate)
+    );
+    if (exactMatches.length === 1) return exactMatches[0].title;
+  }
 
   if (qNorm.length < MIN_QUERY_CHARS) return null;
   const qGrams = trigrams(qNorm);
   if (qGrams.size === 0) return null;
 
   // Score every document: `score` is query-containment (how much of the query
-  // appears in the doc's best field), `tight` is the reverse containment of
-  // that same field (how much of the field the query covers) — used only to
-  // break near-ties in favor of the tightest alias.
+  // appears in the doc's best field or field-union), `tight` is the best
+  // reverse containment (how much of a field the query covers) among fields
+  // that THEMSELVES clear the threshold — used only to break near-ties in
+  // favor of the tightest alias. Keeping tight per-field (rather than taking
+  // it from whichever field happens to hold the top score) means a document
+  // whose short title matches the query exactly doesn't lose that signal just
+  // because a longer alias scores marginally higher; and the union path never
+  // contributes a tight value, since a cross-field match has no single field
+  // to be "tight" against.
   const scored: { title: string; score: number; tight: number }[] = [];
+  const paddedQ = ` ${qNorm} `;
 
   for (const doc of INDEX) {
     // Cross-field: how much of the query appears anywhere in this doc's
@@ -124,17 +142,20 @@ export function resolveDocumentTitle(
 
     for (const field of doc.fields) {
       let s = containment(qGrams, field.grams);
-      // Strong boost for a clean substring match either direction (guarded
-      // against trivially short queries).
+      // Strong boost for a clean substring match either direction — but only
+      // on whole-word boundaries, and never for trivially short queries.
+      // Bare .includes() let tiny catalog aliases ride along mid-token:
+      // "66 h" sits inside "19[66 h]ell", which resolved "the 1966 hell
+      // lecture" to the wrong document.
       if (
-        qNorm.length >= 5 &&
-        (field.norm.includes(qNorm) || qNorm.includes(field.norm))
+        qNorm.length >= MIN_QUERY_CHARS &&
+        (` ${field.norm} `.includes(paddedQ) || paddedQ.includes(` ${field.norm} `))
       ) {
         s = Math.max(s, 0.95);
       }
-      if (s > score) {
-        score = s;
-        tight = containment(field.grams, qGrams);
+      if (s > score) score = s;
+      if (s >= threshold) {
+        tight = Math.max(tight, containment(field.grams, qGrams));
       }
     }
     scored.push({ title: doc.title, score, tight });
@@ -152,7 +173,12 @@ export function resolveDocumentTitle(
   // Near-tie: several documents contain (most of) the query. Resolve only if
   // one candidate is a decisively tighter match than the rest; otherwise the
   // reference is genuinely ambiguous and the fallback search handles it.
-  const contenders = scored.filter((d) => d.score > best.score - AMBIGUITY_MARGIN);
+  // Contenders must clear the threshold themselves — the tiebreak may pick a
+  // runner-up, and "a returned title always scored >= threshold" must hold
+  // for whichever contender wins, not just scored[0].
+  const contenders = scored.filter(
+    (d) => d.score >= threshold && d.score > best.score - AMBIGUITY_MARGIN
+  );
   contenders.sort((a, b) => b.tight - a.tight);
   if (contenders[0].tight - (contenders[1]?.tight ?? 0) >= TIGHTNESS_MARGIN) {
     return contenders[0].title;

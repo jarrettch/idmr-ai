@@ -6,11 +6,13 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "embed": "npx tsx scripts/embed.ts",
-    "soundcloud": "npx tsx scripts/populate-soundcloud.ts",
-    "aliases": "npx tsx scripts/build-aliases.ts",
+    "chunk": "tsx scripts/chunk.ts",
+    "embed": "tsx scripts/embed.ts",
+    "soundcloud": "tsx scripts/populate-soundcloud.ts",
+    "aliases": "tsx scripts/build-aliases.ts",
+    "preview:strip": "tsx scripts/preview-strip.ts",
     "test:e2e": "playwright test",
-    "test:resolve": "npx tsx scripts/check-resolve.ts"
+    "test:resolve": "tsx scripts/check-resolve.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.29",
@@ -31,6 +33,7 @@
     "@playwright/test": "^1.61.1",
     "@types/node": "^25.1.0",
     "@types/react": "^19.2.10",
-    "@types/react-dom": "^19.2.3"
+    "@types/react-dom": "^19.2.3",
+    "tsx": "4.23.1"
   }
 }
