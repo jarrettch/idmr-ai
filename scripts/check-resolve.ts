@@ -41,6 +41,13 @@ const CASES: [string, string | null][] = [
   ["36B", "Satanic Spirits in Ministers"],
   ["catalog 66 H", "You Have to Die to Go to Heaven"],
   ["65 SSB", "Day of Yahweh: Spirit, Soul, Body"],
+  // Generator-derived catalog aliases, including secondary credits, an
+  // en-dash separator, a hard-wrapped header, and a reviewed OCR correction.
+  ["67CB", "Come Out of Babylon"],
+  ["73 SS", "Satanic Spirits in Ministers"],
+  ["31A", "Ignorance and Blasphemy"],
+  ["71.0213", "Discussion at San Luis Obispo"],
+  ["67.0717 P", "Paul and the Eunuchs"],
   // The uncertain "CATALOG #: 65? SSB" must NOT yield a bare "65" alias that
   // a stray number could exact-match.
   ["65", null],
@@ -75,14 +82,6 @@ const CASES: [string, string | null][] = [
   // back rather than silently picking one.
   ["the sunday morning tape", null],
 ];
-
-// Pending WS1/WS2 (REVIEW-FIXES-7-15.md): these need the alias-generator
-// fixes + regenerated document-aliases.ts before they can pass. Move into
-// CASES as each lands.
-//   ["67CB", "Come Out of Babylon"],        // 2.1 hard-wrap suffix ("67CB T")
-//   ["73 SS", "Satanic Spirits in Ministers"], // 2.3 first-catalog-only
-//   ["31A", "Ignorance and Blasphemy"],     // 2.3 first-catalog-only
-//   ["71.0213", <its document>],            // 1.2/2.4 en-dash separator
 
 let failed = 0;
 for (const [ref, want] of CASES) {

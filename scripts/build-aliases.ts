@@ -1,5 +1,7 @@
 import { readFileSync, writeFileSync, readdirSync } from "fs";
-import { join } from "path";
+import { fileURLToPath } from "url";
+import { join, resolve } from "path";
+import { extractCatalogValues } from "./catalog-grammar";
 
 // Builds a static alias index (src/lib/document-aliases.ts) used to resolve a
 // user's reference to a transcript ("Sunday Morning 74/75", "the Christmas
@@ -14,57 +16,49 @@ const OUT = join(process.cwd(), "src", "lib", "document-aliases.ts");
 const HEADING_STOP =
   /\b(by\s+dr|recorded|recorder|received|transferred|transcribed|proofread|approved|catalog|speaker:|reader:|present on tape|disputants|location:|date:|subject:|topics:|printed by)/i;
 
-function norm(s: string): string {
+export function normalizeTranscriptText(s: string): string {
   return s.replace(/\s+/g, " ").trim();
 }
 
-function extractHeading(content: string): string {
-  let h = norm(content).slice(0, 260);
-  h = h.replace(/^[*\s]*\d+\)\s*/, ""); // strip leading "NN)" and asterisks
-  const stop = h.match(HEADING_STOP);
+export function extractHeading(content: string): string {
+  let heading = normalizeTranscriptText(content).slice(0, 260);
+  heading = heading.replace(/^[*\s]*\d+\)\s*/, ""); // leading "NN)" + asterisks
+  const stop = heading.match(HEADING_STOP);
   if (stop && stop.index !== undefined && stop.index > 8) {
-    h = h.slice(0, stop.index);
+    heading = heading.slice(0, stop.index);
   }
-  return h.replace(/[*\s]+$/g, "").trim().slice(0, 200);
+  return heading.replace(/[*\s]+$/g, "").trim().slice(0, 200);
 }
 
 // Disputants / discussants — high-value context (e.g. "RN Hogan" for the
 // Church of Christ debate) that lets references by opponent name resolve.
-function extractDisputants(content: string): string | null {
-  const m = norm(content)
+export function extractDisputants(content: string): string | null {
+  const match = normalizeTranscriptText(content)
     .slice(0, 600)
-    .match(/disputants?\s*:?\s*(.{5,50}?)\s+(?:recorded|audio|catalog|reel|transcrib)/i);
-  return m ? m[1].replace(/[*\s]+$/g, "").trim() : null;
-}
-
-// Catalog value ("74 TV", "73.1225", "66-68 I") so catalog-number references
-// resolve. Digit-led value with a case-SENSITIVE 1–4-letter suffix (an /i
-// suffix would swallow the next lowercase word), guarded against a following
-// header field like "DATE:". A trailing "?" marks an uncertain number
-// ("CATALOG #: 65? SSB") — without it the suffix is lost and a bare, wrongly
-// confident "65" alias gets generated. Same value shape as strip-boilerplate.ts.
-function extractCatalog(content: string): string | null {
-  const m = norm(content)
-    .slice(0, 800)
     .match(
-      /\b(?:CATALOG|[Cc]atalog)\s*(?:#|(?:NUMBER|[Nn]umber)|(?:NO|[Nn]o)\.?)?\s*[:#]?\s*([0-9][\w.-]*\??(?:\s+[A-Z]{1,4}\b(?!\s*:))?)/
+      /disputants?\s*:?\s*(.{5,50}?)\s+(?:recorded|audio|catalog|reel|transcrib)/i
     );
-  return m ? m[1].trim() : null;
+  return match ? match[1].replace(/[*\s]+$/g, "").trim() : null;
 }
 
-interface AliasEntry {
+export interface AliasEntry {
   title: string;
   aliases: string[];
 }
 
-const entries: AliasEntry[] = [];
+interface TranscriptSource {
+  title: string;
+  content?: string;
+}
 
-for (const file of readdirSync(RAW_DIR).filter((f) => f.endsWith(".json"))) {
-  const obj = JSON.parse(readFileSync(join(RAW_DIR, file), "utf-8"));
+export function buildTranscriptAliasEntry(
+  obj: TranscriptSource
+): AliasEntry | null {
   // The junk "Transcripts" doc is a scraped index page, not a lecture — keep
-  // it out of the index so boilerplate-flavored references can't resolve to it.
-  if (obj.title === "Transcripts") continue;
-  const content: string = obj.content ?? "";
+  // it out of the index so boilerplate-flavored references can't resolve.
+  if (obj.title === "Transcripts") return null;
+
+  const content = obj.content ?? "";
   const aliases = new Set<string>();
 
   const heading = extractHeading(content);
@@ -73,31 +67,73 @@ for (const file of readdirSync(RAW_DIR).filter((f) => f.endsWith(".json"))) {
   }
   const disputants = extractDisputants(content);
   if (disputants) aliases.add(disputants);
-  const catalog = extractCatalog(content);
-  if (catalog) aliases.add(catalog);
 
-  entries.push({ title: obj.title, aliases: [...aliases] });
+  const normalizedPreamble = normalizeTranscriptText(content).slice(0, 2500);
+  for (const catalog of extractCatalogValues(normalizedPreamble)) {
+    aliases.add(catalog);
+  }
+
+  return { title: obj.title, aliases: [...aliases] };
 }
 
-// Textbook: hand-authored aliases (not in data/raw).
-entries.push({
-  title: "Elohim the Archetype (Original) Pattern of the Universe",
-  aliases: ["Elohim the Archetype", "the Archetype", "the textbook", "Elohim"],
-});
+export function buildAliasEntries(rawDir = RAW_DIR): AliasEntry[] {
+  const entries: AliasEntry[] = [];
 
-entries.sort((a, b) => a.title.localeCompare(b.title));
+  for (const file of readdirSync(rawDir)
+    .filter((name) => name.endsWith(".json"))
+    .sort()) {
+    const obj = JSON.parse(readFileSync(join(rawDir, file), "utf-8"));
+    const entry = buildTranscriptAliasEntry(obj);
+    if (entry) entries.push(entry);
+  }
 
-const banner =
-  "// AUTO-GENERATED by scripts/build-aliases.ts — do not edit by hand.\n" +
-  "// Resolves user references (headings, dates, 'also called' names, catalog #s)\n" +
-  "// to canonical document titles. Regenerate: npx tsx scripts/build-aliases.ts\n\n";
+  // Textbook: hand-authored aliases (not in data/raw).
+  entries.push({
+    title: "Elohim the Archetype (Original) Pattern of the Universe",
+    aliases: ["Elohim the Archetype", "the Archetype", "the textbook", "Elohim"],
+  });
 
-const body =
-  "export interface DocumentAlias {\n  title: string;\n  aliases: string[];\n}\n\n" +
-  "export const DOCUMENT_ALIASES: DocumentAlias[] = " +
-  JSON.stringify(entries, null, 2) +
-  ";\n";
+  return entries.sort((a, b) => a.title.localeCompare(b.title));
+}
 
-writeFileSync(OUT, banner + body);
-console.log(`Wrote ${OUT} with ${entries.length} documents`);
-console.log(`  ${entries.filter((e) => e.aliases.length > 0).length} have aliases`);
+export function renderAliasSource(entries: AliasEntry[]): string {
+  const banner =
+    "// AUTO-GENERATED by scripts/build-aliases.ts — do not edit by hand.\n" +
+    "// Resolves user references (headings, dates, 'also called' names, catalog #s)\n" +
+    "// to canonical document titles. Regenerate: npm run aliases\n\n";
+
+  const body =
+    "export interface DocumentAlias {\n  title: string;\n  aliases: string[];\n}\n\n" +
+    "export const DOCUMENT_ALIASES: DocumentAlias[] = " +
+    JSON.stringify(entries, null, 2) +
+    ";\n";
+
+  return banner + body;
+}
+
+function main(): void {
+  const entries = buildAliasEntries();
+  const generated = renderAliasSource(entries);
+
+  if (process.argv.includes("--check")) {
+    const current = readFileSync(OUT, "utf-8");
+    if (current !== generated) {
+      console.error(
+        `${OUT} is stale. Run "npm run aliases" and review the generated diff.`
+      );
+      process.exit(1);
+    }
+    console.log(`✓ aliases: ${OUT} is up to date (${entries.length} documents)`);
+    return;
+  }
+
+  writeFileSync(OUT, generated);
+  console.log(`Wrote ${OUT} with ${entries.length} documents`);
+  console.log(`  ${entries.filter((entry) => entry.aliases.length > 0).length} have aliases`);
+}
+
+const isMain =
+  process.argv[1] !== undefined &&
+  resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url));
+
+if (isMain) main();

@@ -76,8 +76,8 @@ async function main() {
   const chunksPath = process.argv[2];
   if (!chunksPath) {
     console.error(
-      "Usage: npx tsx scripts/embed.ts <path-to-chunks.jsonl>\n" +
-        "Example: npx tsx scripts/embed.ts data/processed/chunks.jsonl"
+      "Usage: npm run embed -- <path-to-chunks.jsonl>\n" +
+        "Example: npm run embed -- data/processed/chunks.jsonl"
     );
     process.exit(1);
   }
