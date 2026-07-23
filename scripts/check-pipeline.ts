@@ -4,6 +4,8 @@ import {
   findCatalogCredits,
 } from "./catalog-grammar";
 import { buildTranscriptAliasEntry } from "./build-aliases";
+import { chunkTranscript } from "./chunk";
+import { shouldIncludeDocument } from "./document-policy";
 import { resolveDocumentTitle } from "../src/lib/resolve-document";
 
 interface Check {
@@ -169,6 +171,33 @@ checks.push({
       generatedFixture.aliases.includes(value)
     ),
   detail: `entry=${JSON.stringify(generatedFixture)}`,
+});
+
+const excludedTranscript = {
+  title: "Transcripts",
+  speaker: "",
+  date: null,
+  url: "https://example.test/transcripts",
+  content: "A scraped transcript index, not a lecture.",
+};
+checks.push({
+  name: "shared policy excludes the junk transcript index",
+  run: () =>
+    !shouldIncludeDocument({
+      source: "transcript",
+      title: excludedTranscript.title,
+    }),
+  detail: "Transcripts must be excluded at every generated-data consumer",
+});
+checks.push({
+  name: "chunk generator applies the shared document policy",
+  run: () => chunkTranscript(excludedTranscript).length === 0,
+  detail: "The excluded transcript index must never enter chunks.jsonl",
+});
+checks.push({
+  name: "alias generator applies the shared document policy",
+  run: () => buildTranscriptAliasEntry(excludedTranscript) === null,
+  detail: "The excluded transcript index must never enter document-aliases.ts",
 });
 
 let failed = 0;

@@ -1,6 +1,7 @@
 import { readFileSync } from "fs";
 import { createClient } from "@supabase/supabase-js";
 import { config } from "dotenv";
+import { shouldIncludeDocument } from "./document-policy";
 
 config({ path: ".env.local" });
 
@@ -13,7 +14,7 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY!;
 
 interface Chunk {
   content: string;
-  source: string;
+  source: "transcript" | "textbook";
   title: string;
   speaker?: string;
   date?: string | null;
@@ -93,7 +94,16 @@ async function main() {
 
   console.log(`Loading chunks from ${chunksPath}...`);
   const lines = readFileSync(chunksPath, "utf-8").split("\n").filter(Boolean);
-  const chunks: Chunk[] = lines.map((l) => JSON.parse(l));
+  const inputChunks: Chunk[] = lines.map((line) => JSON.parse(line));
+  const chunks = inputChunks.filter((chunk) =>
+    shouldIncludeDocument({ source: chunk.source, title: chunk.title })
+  );
+  const excludedChunks = inputChunks.length - chunks.length;
+  if (excludedChunks > 0) {
+    console.log(
+      `Skipped ${excludedChunks} chunk(s) excluded by scripts/document-policy.ts`
+    );
+  }
   console.log(`Loaded ${chunks.length} chunks`);
 
   // ----- Step 1: upsert documents and build a (source,title) → id map -----

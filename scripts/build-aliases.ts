@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync, readdirSync } from "fs";
 import { fileURLToPath } from "url";
 import { join, resolve } from "path";
 import { extractCatalogValues } from "./catalog-grammar";
+import { shouldIncludeDocument } from "./document-policy";
 
 // Builds a static alias index (src/lib/document-aliases.ts) used to resolve a
 // user's reference to a transcript ("Sunday Morning 74/75", "the Christmas
@@ -54,9 +55,14 @@ interface TranscriptSource {
 export function buildTranscriptAliasEntry(
   obj: TranscriptSource
 ): AliasEntry | null {
-  // The junk "Transcripts" doc is a scraped index page, not a lecture — keep
-  // it out of the index so boilerplate-flavored references can't resolve.
-  if (obj.title === "Transcripts") return null;
+  if (
+    !shouldIncludeDocument({
+      source: "transcript",
+      title: obj.title,
+    })
+  ) {
+    return null;
+  }
 
   const content = obj.content ?? "";
   const aliases = new Set<string>();

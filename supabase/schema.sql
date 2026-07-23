@@ -92,7 +92,10 @@ language sql stable as $$
   limit match_count;
 $$;
 
--- Semantic search filtered to documents whose title matches `filter_title`.
+-- Semantic search filtered by title. Prefer a case-insensitive exact title
+-- when one exists; only use substring matching when no exact document exists.
+-- This keeps a canonical "Satanic Spirits" filter from also searching its
+-- "... in Ministers" and "... to Demons" sibling documents.
 create or replace function match_chunks_filtered(
   query_embedding vector(1536),
   filter_title    text,
@@ -127,13 +130,24 @@ language sql stable as $$
     1 - (c.embedding <=> query_embedding) as similarity
   from chunks c
   join documents d on d.id = c.document_id
-  where d.title ilike '%' || filter_title || '%'
+  where (
+      lower(d.title) = lower(filter_title)
+      or (
+        not exists (
+          select 1
+          from documents exact_document
+          where lower(exact_document.title) = lower(filter_title)
+        )
+        and d.title ilike '%' || filter_title || '%'
+      )
+    )
     and 1 - (c.embedding <=> query_embedding) > match_threshold
   order by c.embedding <=> query_embedding
   limit match_count;
 $$;
 
--- Sequential fetch of all chunks in a document, used for "summarize this transcript".
+-- Sequential document fetch with the same exact-first title semantics as
+-- match_chunks_filtered. Substring matching remains the unresolved fallback.
 create or replace function chunks_by_title(
   filter_title text,
   max_chunks   int default 40
@@ -164,7 +178,15 @@ language sql stable as $$
     c.chunk_index
   from chunks c
   join documents d on d.id = c.document_id
-  where d.title ilike '%' || filter_title || '%'
+  where lower(d.title) = lower(filter_title)
+     or (
+       not exists (
+         select 1
+         from documents exact_document
+         where lower(exact_document.title) = lower(filter_title)
+       )
+       and d.title ilike '%' || filter_title || '%'
+     )
   order by d.id, c.page nulls first, c.chunk_index
   limit max_chunks;
 $$;

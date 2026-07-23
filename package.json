@@ -13,6 +13,7 @@
     "aliases:check": "tsx scripts/build-aliases.ts --check",
     "preview:strip": "tsx scripts/preview-strip.ts",
     "test:e2e": "playwright test",
+    "test:live-pipeline": "tsx scripts/check-live-pipeline.ts",
     "test:pipeline": "tsx scripts/check-pipeline.ts",
     "test:resolve": "tsx scripts/check-resolve.ts"
   },

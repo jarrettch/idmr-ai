@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync, readdirSync } from "fs";
-import { join, dirname } from "path";
+import { join, dirname, resolve } from "path";
 import { fileURLToPath } from "url";
+import { shouldIncludeDocument } from "./document-policy";
 import { stripBoilerplate } from "./strip-boilerplate";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -8,7 +9,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const CHUNK_SIZE = 1000; // target chars per chunk
 const CHUNK_OVERLAP = 200; // overlap in chars
 
-interface TranscriptSource {
+export interface TranscriptSource {
   title: string;
   speaker: string;
   date: string | null;
@@ -21,7 +22,7 @@ interface TextbookPage {
   content: string;
 }
 
-interface Chunk {
+export interface Chunk {
   source: string;
   title: string;
   speaker?: string;
@@ -107,21 +108,7 @@ function loadTranscripts(dir: string): Chunk[] {
 
   for (const file of files) {
     const data: TranscriptSource = JSON.parse(readFileSync(join(dir, file), "utf-8"));
-    // Remove transcription boilerplate (convention notes, scaffolding) before
-    // chunking so it can't pollute retrieval. See scripts/strip-boilerplate.ts.
-    const { cleaned } = stripBoilerplate(data.content);
-    const textChunks = chunkText(cleaned);
-    for (let i = 0; i < textChunks.length; i++) {
-      chunks.push({
-        source: "transcript",
-        title: data.title,
-        speaker: data.speaker,
-        date: data.date,
-        url: data.url,
-        chunk_index: i,
-        content: textChunks[i],
-      });
-    }
+    chunks.push(...chunkTranscript(data));
   }
 
   return chunks;
@@ -152,7 +139,31 @@ function loadTextbook(filePath: string): Chunk[] {
   return chunks;
 }
 
-function main() {
+export function chunkTranscript(data: TranscriptSource): Chunk[] {
+  if (
+    !shouldIncludeDocument({
+      source: "transcript",
+      title: data.title,
+    })
+  ) {
+    return [];
+  }
+
+  // Remove transcription boilerplate (convention notes, scaffolding) before
+  // chunking so it can't pollute retrieval. See scripts/strip-boilerplate.ts.
+  const { cleaned } = stripBoilerplate(data.content);
+  return chunkText(cleaned).map((content, chunk_index) => ({
+    source: "transcript",
+    title: data.title,
+    speaker: data.speaker,
+    date: data.date,
+    url: data.url,
+    chunk_index,
+    content,
+  }));
+}
+
+function main(): void {
   const dataDir = join(__dirname, "..", "data");
 
   console.log("Loading transcripts...");
@@ -179,4 +190,8 @@ function main() {
   console.log(`Written to ${outPath}`);
 }
 
-main();
+const isMain =
+  process.argv[1] !== undefined &&
+  resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url));
+
+if (isMain) main();
