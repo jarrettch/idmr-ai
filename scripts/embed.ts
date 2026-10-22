@@ -2,6 +2,12 @@ import { readFileSync } from "fs";
 import { createClient } from "@supabase/supabase-js";
 import { config } from "dotenv";
 import { shouldIncludeDocument } from "./document-policy";
+import {
+  planTailTrims,
+  planFullSnapshot,
+  type DbChunkRow,
+  type FileChunkRef,
+} from "./reconcile";
 
 config({ path: ".env.local" });
 
@@ -9,8 +15,6 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SECRET_KEY!
 );
-
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY!;
 
 interface Chunk {
   content: string;
@@ -31,59 +35,57 @@ interface DocumentRow {
   url: string | null;
 }
 
-async function getEmbeddings(texts: string[]): Promise<number[][]> {
-  // Retry transient failures (5xx, 429, network hiccups) with backoff — a
-  // single flaky response otherwise kills a ~100-batch run mid-way.
-  let lastError: Error | null = null;
-  for (let attempt = 1; attempt <= 5; attempt++) {
-    let res: Response;
+// One retry policy for every transient-failure site (Supabase timeouts, cold
+// compute). Backoff scales with the attempt; no sleep after the final failure.
+async function withRetry<T>(
+  label: string,
+  fn: () => Promise<T>,
+  attempts = 5,
+  baseDelayMs = 1000
+): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
-      res = await fetch("https://api.openai.com/v1/embeddings", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "text-embedding-3-small",
-          input: texts,
-        }),
-      });
+      return await fn();
     } catch (err) {
-      lastError = err as Error;
-      console.warn(`  Embedding attempt ${attempt} failed (network); retrying...`);
-      await new Promise((r) => setTimeout(r, 2000 * attempt));
-      continue;
+      lastError = err;
+      if (attempt < attempts) {
+        console.warn(`  ${label}: attempt ${attempt} failed; retrying...`);
+        await new Promise((r) => setTimeout(r, baseDelayMs * attempt));
+      }
     }
-
-    if (res.ok) {
-      const json = await res.json();
-      return json.data.map((d: { embedding: number[] }) => d.embedding);
-    }
-
-    const err = await res.text();
-    lastError = new Error(`OpenAI API error: ${res.status} ${err}`);
-    if (res.status >= 500 || res.status === 429) {
-      console.warn(`  Embedding attempt ${attempt} failed (${res.status}); retrying...`);
-      await new Promise((r) => setTimeout(r, 2000 * attempt));
-      continue;
-    }
-    throw lastError; // 4xx other than 429: not transient, fail fast
   }
   throw lastError;
 }
 
+// Supabase client calls report failure via `error` instead of throwing; wrap
+// them so withRetry sees a rejection.
+function orThrow<T extends { error: unknown }>(result: T): T {
+  if (result.error) throw result.error;
+  return result;
+}
+
 async function main() {
-  const chunksPath = process.argv[2];
+  const args = process.argv.slice(2);
+  const fullSnapshot = args.includes("--full-snapshot");
+  const chunksPath = args.find((a) => !a.startsWith("--"));
   if (!chunksPath) {
     console.error(
-      "Usage: npm run embed -- <path-to-chunks.jsonl>\n" +
-        "Example: npm run embed -- data/processed/chunks.jsonl"
+      "Usage: npm run embed -- <path-to-chunks.jsonl> [--full-snapshot]\n" +
+        "Example: npm run embed -- data/processed/chunks.jsonl\n\n" +
+        "Default: upserts the file's chunks and trims stale chunk_index tails\n" +
+        "only within (document, page) groups present in the file — safe for\n" +
+        "partial files, but a page or document dropped by a re-chunk keeps its\n" +
+        "old rows.\n" +
+        "--full-snapshot: DESTRUCTIVE. Treats the file as the complete corpus:\n" +
+        "also deletes rows whose (page, chunk_index) vanished from a present\n" +
+        "document, and deletes documents (with their chunks) absent from the\n" +
+        "file entirely. Never combine with a partial chunks file."
     );
     process.exit(1);
   }
 
-  if (!OPENAI_API_KEY) {
+  if (!process.env.OPENAI_API_KEY) {
     console.error("Missing OPENAI_API_KEY in .env.local");
     process.exit(1);
   }
@@ -91,6 +93,10 @@ async function main() {
     console.error("Missing NEXT_PUBLIC_SUPABASE_URL in .env.local");
     process.exit(1);
   }
+
+  // Imported after dotenv so the AI SDK sees OPENAI_API_KEY (same pattern as
+  // verify.ts / check-live-pipeline.ts).
+  const { getEmbeddings } = await import("../src/lib/embeddings");
 
   console.log(`Loading chunks from ${chunksPath}...`);
   const lines = readFileSync(chunksPath, "utf-8").split("\n").filter(Boolean);
@@ -105,6 +111,13 @@ async function main() {
     );
   }
   console.log(`Loaded ${chunks.length} chunks`);
+
+  if (fullSnapshot && chunks.length === 0) {
+    console.error(
+      "--full-snapshot with an empty chunks file would delete every document; refusing."
+    );
+    process.exit(1);
+  }
 
   // ----- Step 1: upsert documents and build a (source,title) → id map -----
 
@@ -151,7 +164,9 @@ async function main() {
     const totalBatches = Math.ceil(chunks.length / BATCH_SIZE);
     console.log(`Embedding batch ${batchNum}/${totalBatches}...`);
 
-    const embeddings = await getEmbeddings(texts);
+    // The AI SDK retries transient failures (429/5xx/network) with backoff —
+    // a single flaky response otherwise kills a ~100-batch run mid-way.
+    const { embeddings } = await getEmbeddings(texts, { maxRetries: 4 });
 
     const rows = batch.map((chunk, j) => {
       const documentId = docIdByKey.get(`${chunk.source}::${chunk.title}`);
@@ -169,26 +184,16 @@ async function main() {
       };
     });
 
-    // Retry transient failures (e.g. free-tier statement timeouts / cold
-    // compute) with backoff before giving up on the run.
-    let lastError: unknown = null;
-    for (let attempt = 1; attempt <= 5; attempt++) {
-      const { error } = await supabase.from("chunks").upsert(rows, {
-        onConflict: "document_id,chunk_index,page",
-      });
-      if (!error) {
-        lastError = null;
-        break;
-      }
-      lastError = error;
-      console.warn(
-        `  Batch ${batchNum} insert attempt ${attempt} failed (${(error as { code?: string }).code ?? "?"}); retrying...`
+    try {
+      await withRetry(`batch ${batchNum} insert`, async () =>
+        orThrow(
+          await supabase.from("chunks").upsert(rows, {
+            onConflict: "document_id,chunk_index,page",
+          })
+        )
       );
-      await new Promise((r) => setTimeout(r, 1000 * attempt));
-    }
-
-    if (lastError) {
-      console.error(`Error inserting batch ${batchNum}:`, lastError);
+    } catch (err) {
+      console.error(`Error inserting batch ${batchNum}:`, err);
       process.exit(1);
     }
 
@@ -201,55 +206,132 @@ async function main() {
     }
   }
 
-  // ----- Step 3: delete stale chunks -----
+  // ----- Step 3: reconcile stale chunks -----
   // The upsert above overwrites (document_id, chunk_index, page) rows in
-  // place, but a document whose chunk count SHRANK (e.g. after stripper
-  // improvements) leaves its old tail rows behind, and retrieval would serve
-  // that stale text. Chunk indexes restart per page for the textbook, so
-  // group by (document, page). Documents absent from this chunks file are
-  // left untouched.
+  // place but never deletes. Deletion semantics live in scripts/reconcile.ts:
+  // default mode trims shrunken tails within (document, page) groups present
+  // in this file (partial-safe; dropped pages/documents keep their rows);
+  // --full-snapshot reconciles the DB to exactly this file's contents.
 
-  const groups = new Map<
-    string,
-    { docId: number; page: number | null; maxIdx: number }
-  >();
-  for (const chunk of chunks) {
-    const docId = docIdByKey.get(`${chunk.source}::${chunk.title}`)!;
-    const page = chunk.page ?? null;
-    const key = `${docId}::${page}`;
-    const g = groups.get(key);
-    if (g) g.maxIdx = Math.max(g.maxIdx, chunk.chunk_index);
-    else groups.set(key, { docId, page, maxIdx: chunk.chunk_index });
-  }
+  const fileRefs: FileChunkRef[] = chunks.map((chunk) => ({
+    docId: docIdByKey.get(`${chunk.source}::${chunk.title}`)!,
+    page: chunk.page ?? null,
+    chunkIndex: chunk.chunk_index,
+  }));
 
-  console.log(`Deleting stale chunks across ${groups.size} (doc, page) groups...`);
+  const trims = planTailTrims(fileRefs);
+  console.log(
+    `Deleting stale chunk tails across ${trims.length} (doc, page) groups...`
+  );
   let staleDeleted = 0;
-  for (const g of groups.values()) {
-    let lastError: unknown = null;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      let q = supabase
-        .from("chunks")
-        .delete({ count: "exact" })
-        .eq("document_id", g.docId)
-        .gt("chunk_index", g.maxIdx);
-      q = g.page === null ? q.is("page", null) : q.eq("page", g.page);
-      const { count, error } = await q;
-      if (!error) {
-        staleDeleted += count ?? 0;
-        lastError = null;
-        break;
-      }
-      lastError = error;
-      await new Promise((r) => setTimeout(r, 1000 * attempt));
+  try {
+    for (const g of trims) {
+      const { count } = await withRetry(
+        `stale trim doc ${g.docId} page ${g.page}`,
+        async () => {
+          let q = supabase
+            .from("chunks")
+            .delete({ count: "exact" })
+            .eq("document_id", g.docId)
+            .gt("chunk_index", g.maxIdx);
+          q = g.page === null ? q.is("page", null) : q.eq("page", g.page);
+          return orThrow(await q);
+        },
+        3
+      );
+      staleDeleted += count ?? 0;
     }
-    if (lastError) {
-      console.error("Error deleting stale chunks:", lastError);
+  } catch (err) {
+    console.error("Error deleting stale chunks:", err);
+    process.exit(1);
+  }
+  console.log(`  Deleted ${staleDeleted} stale tail chunks`);
+
+  if (fullSnapshot) {
+    try {
+      await reconcileFullSnapshot(fileRefs);
+    } catch (err) {
+      console.error("Error during full-snapshot reconciliation:", err);
       process.exit(1);
     }
   }
-  console.log(`  Deleted ${staleDeleted} stale chunks`);
 
   console.log("Done! All chunks embedded and stored in Supabase.");
+}
+
+async function reconcileFullSnapshot(fileRefs: FileChunkRef[]) {
+  console.log("Full-snapshot reconciliation...");
+  const presentDocIds = Array.from(new Set(fileRefs.map((r) => r.docId)));
+
+  // Page through the present documents' chunk keys (Supabase caps selects at
+  // 1000 rows).
+  const dbChunks: DbChunkRow[] = [];
+  const PAGE = 1000;
+  for (let from = 0; ; from += PAGE) {
+    const { data } = await withRetry(`chunk key fetch @${from}`, async () =>
+      orThrow(
+        await supabase
+          .from("chunks")
+          .select("id, document_id, page, chunk_index")
+          .in("document_id", presentDocIds)
+          .order("id", { ascending: true })
+          .range(from, from + PAGE - 1)
+      )
+    );
+    const rows = data ?? [];
+    for (const row of rows) {
+      dbChunks.push({
+        id: row.id as number,
+        docId: row.document_id as number,
+        page: (row.page as number | null) ?? null,
+        chunkIndex: row.chunk_index as number,
+      });
+    }
+    if (rows.length < PAGE) break;
+  }
+
+  const { data: docData } = await withRetry("document list fetch", async () =>
+    orThrow(await supabase.from("documents").select("id, source, title"))
+  );
+  const dbDocs = (docData ?? []).map((d) => ({
+    id: d.id as number,
+    source: d.source as string,
+    title: d.title as string,
+  }));
+
+  const { staleChunkIds, absentDocs } = planFullSnapshot(
+    fileRefs,
+    dbChunks,
+    dbDocs
+  );
+
+  console.log(
+    `  ${staleChunkIds.length} stale chunk(s) in present documents; ` +
+      `${absentDocs.length} document(s) absent from the snapshot`
+  );
+
+  const DELETE_BATCH = 500;
+  for (let i = 0; i < staleChunkIds.length; i += DELETE_BATCH) {
+    const ids = staleChunkIds.slice(i, i + DELETE_BATCH);
+    await withRetry(`stale chunk delete batch ${i / DELETE_BATCH + 1}`, async () =>
+      orThrow(await supabase.from("chunks").delete().in("id", ids))
+    );
+  }
+
+  for (const doc of absentDocs) {
+    console.log(`  Deleting absent document: ${doc.source} :: ${doc.title}`);
+  }
+  if (absentDocs.length > 0) {
+    // documents(id) cascades to chunks, so this removes their chunks too.
+    await withRetry("absent document delete", async () =>
+      orThrow(
+        await supabase
+          .from("documents")
+          .delete()
+          .in("id", absentDocs.map((d) => d.id))
+      )
+    );
+  }
 }
 
 main();

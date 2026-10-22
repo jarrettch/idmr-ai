@@ -6,6 +6,7 @@ import {
 import { buildTranscriptAliasEntry } from "./build-aliases";
 import { chunkTranscript } from "./chunk";
 import { shouldIncludeDocument } from "./document-policy";
+import { planTailTrims, planFullSnapshot } from "./reconcile";
 import { resolveDocumentTitle } from "../src/lib/resolve-document";
 
 interface Check {
@@ -198,6 +199,70 @@ checks.push({
   name: "alias generator applies the shared document policy",
   run: () => buildTranscriptAliasEntry(excludedTranscript) === null,
   detail: "The excluded transcript index must never enter document-aliases.ts",
+});
+
+// --- embed.ts stale-chunk reconciliation (mocked file/DB state) ---
+// Mock scenario: doc 1 is paged (textbook-like) and re-chunked with page 2
+// dropped and page 1 shrunk from 3 chunks to 2; doc 2 is unpaged and
+// unchanged; doc 3 exists only in the DB (absent from the file).
+const mockFile = [
+  { docId: 1, page: 1, chunkIndex: 0 },
+  { docId: 1, page: 1, chunkIndex: 1 },
+  { docId: 2, page: null, chunkIndex: 0 },
+];
+const mockDbChunks = [
+  { id: 10, docId: 1, page: 1, chunkIndex: 0 },
+  { id: 11, docId: 1, page: 1, chunkIndex: 1 },
+  { id: 12, docId: 1, page: 1, chunkIndex: 2 }, // shrunken tail
+  { id: 13, docId: 1, page: 2, chunkIndex: 0 }, // dropped page
+  { id: 14, docId: 2, page: null, chunkIndex: 0 },
+  { id: 15, docId: 3, page: null, chunkIndex: 0 }, // absent doc's chunk
+];
+const mockDbDocs = [
+  { id: 1, source: "textbook", title: "Paged Doc" },
+  { id: 2, source: "transcript", title: "Unpaged Doc" },
+  { id: 3, source: "transcript", title: "Removed Doc" },
+];
+
+const trims = planTailTrims(mockFile);
+checks.push({
+  name: "default reconcile trims only tails of groups present in the file",
+  run: () =>
+    trims.length === 2 &&
+    trims.some((t) => t.docId === 1 && t.page === 1 && t.maxIdx === 1) &&
+    trims.some((t) => t.docId === 2 && t.page === null && t.maxIdx === 0),
+  detail: `trims=${JSON.stringify(trims)}`,
+});
+checks.push({
+  name: "default reconcile never targets dropped pages or absent documents",
+  run: () => !trims.some((t) => (t.docId === 1 && t.page === 2) || t.docId === 3),
+  detail:
+    "partial ingestion must stay safe: only (doc, page) groups in the file are trimmed",
+});
+
+const snapshot = planFullSnapshot(mockFile, mockDbChunks, mockDbDocs);
+checks.push({
+  name: "full snapshot deletes dropped-page rows, not just shrunken tails",
+  run: () =>
+    snapshot.staleChunkIds.includes(12) && snapshot.staleChunkIds.includes(13),
+  detail: `staleChunkIds=${JSON.stringify(snapshot.staleChunkIds)}`,
+});
+checks.push({
+  name: "full snapshot keeps every row still present in the file",
+  run: () => [10, 11, 14].every((id) => !snapshot.staleChunkIds.includes(id)),
+  detail: `staleChunkIds=${JSON.stringify(snapshot.staleChunkIds)}`,
+});
+checks.push({
+  name: "full snapshot deletes exactly the documents absent from the file",
+  run: () =>
+    snapshot.absentDocs.length === 1 && snapshot.absentDocs[0].id === 3,
+  detail: `absentDocs=${JSON.stringify(snapshot.absentDocs)}`,
+});
+checks.push({
+  name: "full snapshot leaves absent-document chunks to the FK cascade",
+  run: () => !snapshot.staleChunkIds.includes(15),
+  detail:
+    "absent docs are deleted as document rows (chunks cascade); their chunks must not double-appear in staleChunkIds",
 });
 
 let failed = 0;

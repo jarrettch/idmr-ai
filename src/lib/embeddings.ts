@@ -9,11 +9,13 @@ export async function getEmbedding(text: string): Promise<number[]> {
 }
 
 export async function getEmbeddings(
-  texts: string[]
+  texts: string[],
+  options?: { maxRetries?: number }
 ): Promise<{ embeddings: number[][] }> {
   const { embeddings } = await embedMany({
     model: embeddingModel,
     values: texts,
+    maxRetries: options?.maxRetries,
   });
   return { embeddings };
 }
