@@ -4,6 +4,10 @@ const BASE =
   "benchmark";
 const queries = JSON.parse(readFileSync(`${BASE}/benchmark.json`, "utf8"));
 
+// Optional output path so a new retrieval configuration can be scored without
+// overwriting a committed baseline: npx tsx benchmark/run_rag.ts out.json
+const OUT = process.argv[2] ?? `${BASE}/rag_results.json`;
+
 async function main() {
   const { searchByContent } = await import(
     "../src/lib/retrieval"
@@ -20,8 +24,8 @@ async function main() {
     out.push({ query: item.query, docs });
     console.log(`${item.query} => ${docs.slice(0, 3).join(" | ")}`);
   }
-  writeFileSync(`${BASE}/rag_results.json`, JSON.stringify(out, null, 1));
-  console.log("done");
+  writeFileSync(OUT, JSON.stringify(out, null, 1));
+  console.log(`done -> ${OUT}`);
 }
 
 main().catch((e) => {

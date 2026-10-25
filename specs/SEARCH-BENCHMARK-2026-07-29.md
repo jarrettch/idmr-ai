@@ -27,6 +27,21 @@
 
 4. **This benchmark handicaps the app.** Production is an agent with three retrieval tools; `search_by_title` would trivially win bucket A and much of B. A fair *product-level* benchmark drives the chat endpoint end-to-end and scores "did the member get a correct, cited answer" — expected to be strongly in the app's favor, at the cost of a few dollars of API tokens to run.
 
+## Implementation status
+
+**2026-10-25:** roadmap items 1-3 are implemented together in
+`match_chunks_hybrid` (`supabase/schema.sql`): reciprocal rank fusion over a
+vector list, a `to_tsvector`/`ts_rank_cd` list, and a trigram title list, with
+a `row_number()` per-document cap over the fused set. `searchByContent` calls
+it and falls back to `match_chunks` when the function is absent. Item 2 is done
+at *query* time via title similarity rather than by prepending titles at embed
+time, so it needed no re-chunk or re-embed.
+
+The DDL is unapplied and the benchmark is not yet re-run, so **no post-change
+numbers exist**. Until they do, the 23/30 above remains the current measured
+state. Item 4 (re-run after each change) is the next step; see
+`benchmark/README.md` for scoring against the frozen baseline.
+
 ## Engineering roadmap (from failure analysis)
 
 1. **Hybrid retrieval** — combine vector similarity with keyword/BM25 (or Postgres full-text) scores; exact-phrase matches should boost.

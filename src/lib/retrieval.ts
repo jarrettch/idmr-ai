@@ -10,15 +10,52 @@ export interface ChunkResult {
   date?: string;
   url?: string;
   soundcloud_url?: string;
+  /**
+   * Relevance score, display-only. Cosine similarity (0-1) from the vector
+   * and title paths; a reciprocal-rank-fusion score (much smaller, ~0.01-0.05)
+   * from `searchByContent`. Comparable within one result set, not across them.
+   */
   similarity: number;
 }
 
 /**
- * Search by vector similarity across all chunks.
+ * General content search across all chunks. Hybrid: fuses vector similarity,
+ * full-text relevance, and document-title similarity, then caps how many
+ * chunks any one document may contribute. See `match_chunks_hybrid` in
+ * `supabase/schema.sql` for the fusion itself and the benchmark that motivated
+ * it (`specs/SEARCH-BENCHMARK-2026-07-29.md`).
+ *
+ * Falls back to plain vector search when the hybrid RPC is missing, so
+ * deploying this code before applying the schema degrades rather than breaks.
  */
 export async function searchByContent(query: string): Promise<ChunkResult[]> {
   const embedding = await getEmbedding(query);
 
+  const { data, error } = await supabase.rpc("match_chunks_hybrid", {
+    query_embedding: embedding,
+    query_text: query,
+    match_count: 15,
+    per_document: 3,
+  });
+
+  if (!error) return (data ?? []).map(mapRow);
+
+  if (isMissingFunction(error)) {
+    console.warn(
+      "match_chunks_hybrid not found — apply supabase/schema.sql. " +
+        "Falling back to plain vector search."
+    );
+    return searchByContentVector(embedding);
+  }
+
+  console.error("Supabase hybrid retrieval error:", error);
+  return [];
+}
+
+/** Plain vector search. The pre-hybrid behaviour, kept as the fallback path. */
+async function searchByContentVector(
+  embedding: number[]
+): Promise<ChunkResult[]> {
   const { data, error } = await supabase.rpc("match_chunks", {
     query_embedding: embedding,
     match_count: 15,
@@ -31,6 +68,17 @@ export async function searchByContent(query: string): Promise<ChunkResult[]> {
   }
 
   return (data ?? []).map(mapRow);
+}
+
+/**
+ * PostgREST reports an unknown RPC as PGRST202 (no matching function in the
+ * schema cache). Anything else is a real failure and must not be masked.
+ */
+function isMissingFunction(error: { code?: string; message?: string }): boolean {
+  return (
+    error.code === "PGRST202" ||
+    /could not find the function/i.test(error.message ?? "")
+  );
 }
 
 /**

@@ -102,6 +102,59 @@ async function main(): Promise<void> {
     `error=${excludedError?.message ?? "none"} rows=${excluded?.length ?? 0}`
   );
 
+  // --- hybrid retrieval (match_chunks_hybrid) ---
+  const perDocument = 3;
+  const titleQuery = "Book of Jasher";
+  const titleEmbedding = await getEmbedding(titleQuery);
+  const { data: hybrid, error: hybridError } = await supabase.rpc(
+    "match_chunks_hybrid",
+    {
+      query_embedding: titleEmbedding,
+      query_text: titleQuery,
+      match_count: 15,
+      per_document: perDocument,
+    }
+  );
+  check(
+    "match_chunks_hybrid exists and returns results",
+    !hybridError && (hybrid?.length ?? 0) > 0,
+    `error=${hybridError?.message ?? "none"} rows=${hybrid?.length ?? 0} (apply supabase/schema.sql if the function is missing)`
+  );
+
+  const hybridRows = (hybrid ?? []) as Array<Record<string, unknown>>;
+  const perDocCounts = new Map<string, number>();
+  for (const row of hybridRows) {
+    const key = String(row.title);
+    perDocCounts.set(key, (perDocCounts.get(key) ?? 0) + 1);
+  }
+  const worst = [...perDocCounts.entries()].sort((a, b) => b[1] - a[1])[0];
+  check(
+    "match_chunks_hybrid honours the per-document cap",
+    !hybridError && (worst?.[1] ?? 0) <= perDocument,
+    `worst=${JSON.stringify(worst)} cap=${perDocument}`
+  );
+
+  // The title branch is what the benchmark's bucket-A/B misses needed: an
+  // exact-title query must surface its own document, not just topical neighbours.
+  const hybridTop3 = [
+    ...new Set(hybridRows.map((row) => String(row.title))),
+  ].slice(0, 3);
+  check(
+    "match_chunks_hybrid surfaces the titled document in the top 3",
+    !hybridError && hybridTop3.includes(titleQuery),
+    `top3=${JSON.stringify(hybridTop3)} expected to contain ${JSON.stringify(titleQuery)}`
+  );
+
+  // Scores are reciprocal-rank-fusion sums, so they must descend monotonically.
+  const scores: number[] = hybridRows.map((row) => row.similarity as number);
+  check(
+    "match_chunks_hybrid returns descending fused scores",
+    !hybridError &&
+      scores.length > 0 &&
+      scores.every((score, i) => i === 0 || score <= scores[i - 1]),
+    `scores=${JSON.stringify(scores.slice(0, 5))}`
+  );
+
   const forbiddenPhrases = [
     "indicates that the speaker ended",
     "group comments and general conversation has not been transcribed",

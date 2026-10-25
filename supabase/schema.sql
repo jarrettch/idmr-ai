@@ -48,6 +48,13 @@ create index if not exists chunks_embedding_hnsw_idx
 
 create index if not exists chunks_document_id_idx on chunks (document_id);
 
+-- Lexical half of hybrid retrieval. An expression index (rather than a stored
+-- generated column) keeps this a pure index build with no table rewrite, and
+-- stays in sync automatically. Queries must spell the expression identically
+-- as to_tsvector('english', content) for the planner to use it.
+create index if not exists chunks_content_fts_idx
+  on chunks using gin (to_tsvector('english', content));
+
 -- ============================================================================
 -- Retrieval RPCs
 -- ============================================================================
@@ -89,6 +96,144 @@ language sql stable as $$
   join documents d on d.id = c.document_id
   where 1 - (c.embedding <=> query_embedding) > match_threshold
   order by c.embedding <=> query_embedding
+  limit match_count;
+$$;
+
+-- Hybrid search: the general-purpose replacement for match_chunks.
+--
+-- The 2026-07-29 benchmark (specs/SEARCH-BENCHMARK-2026-07-29.md) found raw
+-- cosine similarity losing 23/30 to the legacy keyword search's 25/30 on
+-- top-3 hits, for two reasons: the lecture vocabulary is distinctive enough
+-- that exact word matching is strong, and chunks of the corpus's largest
+-- document crowded the correct lecture out of top-k. This function addresses
+-- both by fusing three ranked lists and then capping per-document output.
+--
+-- Fusion is reciprocal rank fusion, which consumes only each list's RANK.
+-- That sidesteps having to normalise cosine similarity against ts_rank_cd
+-- against trigram similarity, none of which share a scale.
+--
+-- Each list is limited inside a subquery before being ranked, so the vector
+-- branch can still terminate early against the HNSW index.
+create or replace function match_chunks_hybrid(
+  query_embedding  vector(1536),
+  query_text       text,
+  match_count      int   default 15,
+  per_document     int   default 3,
+  candidate_count  int   default 60,
+  rrf_k            int   default 60,
+  weight_vector    float default 1.0,
+  weight_text      float default 1.0,
+  weight_title     float default 0.6,
+  title_threshold  float default 0.25
+)
+returns table (
+  id              bigint,
+  content         text,
+  source          text,
+  title           text,
+  speaker         text,
+  date            text,
+  url             text,
+  soundcloud_url  text,
+  page            integer,
+  chunk_index     integer,
+  similarity      float
+)
+language sql stable as $$
+  with
+  -- List 1: nearest neighbours by cosine distance.
+  vector_hits as (
+    select s.id, row_number() over (order by s.dist) as rank
+    from (
+      select c.id, c.embedding <=> query_embedding as dist
+      from chunks c
+      order by c.embedding <=> query_embedding
+      limit candidate_count
+    ) s
+  ),
+  -- List 2: lexical relevance. websearch_to_tsquery tolerates arbitrary user
+  -- text without raising on punctuation; a stopword-only query yields an empty
+  -- tsquery, which matches nothing, so this list simply goes empty.
+  text_query as (
+    select websearch_to_tsquery('english', coalesce(query_text, '')) as q
+  ),
+  text_hits as (
+    select s.id, row_number() over (order by s.rnk desc, s.id) as rank
+    from (
+      select c.id, ts_rank_cd(to_tsvector('english', c.content), tq.q) as rnk
+      from chunks c
+      cross join text_query tq
+      where to_tsvector('english', c.content) @@ tq.q
+      order by rnk desc, c.id
+      limit candidate_count
+    ) s
+  ),
+  -- List 3: chunks of documents whose TITLE looks like the query. Trigram
+  -- similarity rather than full-text, because stemming misses pairs like
+  -- "hebrews 1:1 explained" / "Explanation of Hebrews 1:1" ('explain' vs
+  -- 'explan'). Thresholded, so a conceptual question that resembles no title
+  -- contributes nothing here instead of injecting arbitrary documents.
+  title_docs as (
+    select d.id, similarity(d.title, coalesce(query_text, '')) as title_sim
+    from documents d
+    where similarity(d.title, coalesce(query_text, '')) >= title_threshold
+    order by title_sim desc
+    limit 5
+  ),
+  title_hits as (
+    select s.id, row_number() over (order by s.title_sim desc, s.dist) as rank
+    from (
+      select c.id, td.title_sim, c.embedding <=> query_embedding as dist
+      from chunks c
+      join title_docs td on td.id = c.document_id
+      order by td.title_sim desc, dist
+      limit candidate_count
+    ) s
+  ),
+  fused as (
+    select
+      ids.id,
+      coalesce(weight_vector / (rrf_k + v.rank), 0)
+        + coalesce(weight_text / (rrf_k + t.rank), 0)
+        + coalesce(weight_title / (rrf_k + n.rank), 0) as score
+    from (
+      select id from vector_hits
+      union select id from text_hits
+      union select id from title_hits
+    ) ids
+    left join vector_hits v on v.id = ids.id
+    left join text_hits   t on t.id = ids.id
+    left join title_hits  n on n.id = ids.id
+  ),
+  -- Per-document diversity cap: a single large document keeps only its best
+  -- `per_document` chunks, so it can no longer occupy the whole result set.
+  -- Deliberately not 1 — the textbook is genuinely the right answer for some
+  -- queries, and should be able to contribute more than a single passage.
+  capped as (
+    select f.id, f.score,
+           row_number() over (
+             partition by c.document_id order by f.score desc, f.id
+           ) as doc_rank
+    from fused f
+    join chunks c on c.id = f.id
+  )
+  select
+    c.id,
+    c.content,
+    d.source,
+    d.title,
+    d.speaker,
+    d.date,
+    d.url,
+    d.soundcloud_url,
+    c.page,
+    c.chunk_index,
+    cap.score as similarity
+  from capped cap
+  join chunks c    on c.id = cap.id
+  join documents d on d.id = c.document_id
+  where cap.doc_rank <= per_document
+  order by cap.score desc, c.id
   limit match_count;
 $$;
 

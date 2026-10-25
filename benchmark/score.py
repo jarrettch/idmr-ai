@@ -1,9 +1,14 @@
-import json, html, statistics
+import json, html, statistics, sys, os
 
 BASE = "benchmark"
+
+# Optional: score an alternative rag results file (see run_rag.ts), so a new
+# retrieval configuration can be compared against the committed baseline.
+RAG_PATH = sys.argv[1] if len(sys.argv) > 1 else f"{BASE}/rag_results.json"
+LABEL = os.path.basename(RAG_PATH).replace("_results.json", "").replace(".json", "")[:6]
 bench = json.load(open(f"{BASE}/benchmark.json"))
 old = {r["query"]: r for r in json.load(open(f"{BASE}/old_results.json"))}
-rag = {r["query"]: r for r in json.load(open(f"{BASE}/rag_results.json"))}
+rag = {r["query"]: r for r in json.load(open(RAG_PATH))}
 
 def norm(s):
     return html.unescape(s).lower()
@@ -23,7 +28,8 @@ for item in bench:
     buckets.setdefault(b, []).append((oh, rh))
     rows.append((b, q, oh, o["count"], o_anywhere, rh))
 
-print(f"{'bucket':<20} {'query':<42} {'old3':<5} {'#res':<5} {'oldAny':<7} {'rag3'}")
+print(f"scoring {RAG_PATH}\n")
+print(f"{'bucket':<20} {'query':<42} {'old3':<5} {'#res':<5} {'oldAny':<7} {LABEL}")
 for b, q, oh, c, oa, rh in rows:
     print(f"{b:<20} {q:<42} {str(oh):<5} {c:<5} {str(oa):<7} {rh}")
 
@@ -32,8 +38,8 @@ tot_o = tot_r = 0
 for b, res in buckets.items():
     o = sum(1 for x, _ in res if x); r = sum(1 for _, y in res if y)
     tot_o += o; tot_r += r
-    print(f"{b}: old {o}/{len(res)}  rag {r}/{len(res)}")
-print(f"TOTAL: old {tot_o}/30  rag {tot_r}/30")
+    print(f"{b}: old {o}/{len(res)}  {LABEL} {r}/{len(res)}")
+print(f"TOTAL: old {tot_o}/30  {LABEL} {tot_r}/30")
 
 counts = [old[i['query']]['count'] for i in bench]
 print(f"\nold search result-list size: mean {statistics.mean(counts):.0f}, median {statistics.median(counts)}, max {max(counts)}")
