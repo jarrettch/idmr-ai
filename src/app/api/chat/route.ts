@@ -68,9 +68,16 @@ export async function POST(req: Request) {
   );
   const conversationSummary = recentMessages.join("\n");
 
-  // Step 1: Use a lightweight model to decide which retrieval tool(s) to call
+  // Step 1: Use a lightweight model to decide which retrieval tool(s) to call.
+  // Haiku 5.5 is ~10x cheaper per token than Haiku 4.5 ($0.10/$0.50 vs
+  // $1/$5 per MTok) and this call runs on every request. It also has adaptive
+  // thinking ON by default, which a routing decision does not need, so effort
+  // is pinned low. Do NOT add a `thinking` option here: this provider version
+  // only models the old enabled/disabled shape, and a thinking budget is
+  // rejected with a 400 on Haiku 5.5.
   const plannerResult = await generateText({
-    model: anthropic("claude-haiku-4-5-20251001"),
+    model: anthropic("claude-haiku-5-5"),
+    providerOptions: { anthropic: { effort: "low" } },
     system: `You are a query planner for an IDMR (Institute of Divine Metaphysical Research) knowledge base containing lecture transcripts and the textbook "Elohim the Archetype (Original) Pattern of the Universe."
 
 Given the user's question and recent conversation context, decide which search tool(s) to call. You MUST call at least one tool.
@@ -163,8 +170,12 @@ ${context}`;
 
   const modelMessages = await convertToModelMessages(messages);
 
+  // Sonnet 5.5 is both newer and cheaper than Sonnet 4.6 ($2/$10 vs $3/$15
+  // per MTok). It rejects `temperature`/`top_p` and a disabled `thinking`,
+  // none of which are set here, and it rejects a forced `tool_choice` — the
+  // planner steers tool use from its prompt instead, so that stays safe.
   const result = streamText({
-    model: anthropic("claude-sonnet-4-6"),
+    model: anthropic("claude-sonnet-5-5"),
     system: systemPrompt,
     messages: modelMessages,
   });
