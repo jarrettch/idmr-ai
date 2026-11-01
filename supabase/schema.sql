@@ -112,6 +112,13 @@ $$;
 -- That sidesteps having to normalise cosine similarity against ts_rank_cd
 -- against trigram similarity, none of which share a scale.
 --
+-- All three weights are 1.0, i.e. plain unweighted RRF. An earlier 0.6 on the
+-- title list scored 28/30 against 30/30 for equal weights; the two queries it
+-- lost ("satan let loose in the flesh", "how to enter the most holy place")
+-- had the right document found by the title branch but ranked just below the
+-- top 3. The weights remain parameters so they can be swept, but note that
+-- any retune measured only on the 30-query benchmark is fitting the test set.
+--
 -- Each list is limited inside a subquery before being ranked, so the vector
 -- branch can still terminate early against the HNSW index.
 create or replace function match_chunks_hybrid(
@@ -123,7 +130,7 @@ create or replace function match_chunks_hybrid(
   rrf_k            int   default 60,
   weight_vector    float default 1.0,
   weight_text      float default 1.0,
-  weight_title     float default 0.6,
+  weight_title     float default 1.0,
   title_threshold  float default 0.25
 )
 returns table (

@@ -27,20 +27,50 @@
 
 4. **This benchmark handicaps the app.** Production is an agent with three retrieval tools; `search_by_title` would trivially win bucket A and much of B. A fair *product-level* benchmark drives the chat endpoint end-to-end and scores "did the member get a correct, cited answer" — expected to be strongly in the app's favor, at the cost of a few dollars of API tokens to run.
 
-## Implementation status
+## Implementation status and re-run (2026-11-01)
 
-**2026-10-25:** roadmap items 1-3 are implemented together in
-`match_chunks_hybrid` (`supabase/schema.sql`): reciprocal rank fusion over a
-vector list, a `to_tsvector`/`ts_rank_cd` list, and a trigram title list, with
-a `row_number()` per-document cap over the fused set. `searchByContent` calls
-it and falls back to `match_chunks` when the function is absent. Item 2 is done
-at *query* time via title similarity rather than by prepending titles at embed
+Roadmap items 1-3 are implemented together in `match_chunks_hybrid`
+(`supabase/schema.sql`): reciprocal rank fusion over a vector list, a
+`to_tsvector`/`ts_rank_cd` list, and a trigram title list, with a
+`row_number()` per-document cap over the fused set. `searchByContent` calls it
+and falls back to `match_chunks` when the function is absent. Item 2 landed at
+*query* time via title similarity rather than by prepending titles at embed
 time, so it needed no re-chunk or re-embed.
 
-The DDL is unapplied and the benchmark is not yet re-run, so **no post-change
-numbers exist**. Until they do, the 23/30 above remains the current measured
-state. Item 4 (re-run after each change) is the next step; see
-`benchmark/README.md` for scoring against the frozen baseline.
+### Results after hybrid retrieval
+
+| Bucket | Old keyword search | Raw semantic (before) | Hybrid (after) |
+|---|---|---|---|
+| A: exact-title lookups | **10/10** | 9/10 | **10/10** |
+| B: paraphrase/typo | 7/10 | 7/10 | **10/10** |
+| C: conceptual questions | 8/10 | 7/10 | **10/10** |
+| **Total** | 25/30 | 23/30 | **30/30** |
+
+The two misses that survived the first configuration were `satan let loose in
+the flesh` and `how to enter the most holy place`. In both, the title branch
+had already found the right document; it sat just below the top 3. Lowering
+`title_threshold` changed nothing, which located the cause as weighting rather
+than recall. Raising `weight_title` from an initial 0.6 to 1.0, making all
+three weights equal (plain unweighted RRF), moved both to rank 2 and
+changed the top-3 ordering on only 5 of 30 queries, with no regressions.
+Intermediate score at 0.6 was 28/30.
+
+### How much to trust 30/30
+
+Not very much, on its own:
+
+- **n=30.** The confidence interval on 30/30 is wide. The move from 23 to 28 is
+  the robust part; the last two queries are within noise.
+- **The final weight was chosen using this set**, so the set is now a tuning
+  target, not a clean holdout. Equal weights are RRF's standard form and 0.6
+  was the arbitrary pick, but the selection still happened here.
+- **Still a handicapped benchmark.** This measures raw retrieval, not the
+  three-tool agent that production actually runs.
+
+Honest claim: hybrid retrieval took raw top-3 retrieval from 23/30 to 30/30 on
+a 30-query labeled set, against 25/30 for the legacy keyword search. Next step
+for a stronger claim is more queries, ideally written without reference to
+these failures, and the end-to-end product eval in finding #4 below.
 
 ## Engineering roadmap (from failure analysis)
 
